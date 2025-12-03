@@ -43,21 +43,58 @@ func (u *UserStore) ActivateUser(ctx context.Context, token string) error {
 }
 
 func (u *UserStore) CreateUserAndVerificationToken(ctx context.Context, user *User, token string) error {
-	return nil
+	return util.WithTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		if err := u.createUser(ctx, tx, user); err != nil {
+			return err
+		}
+
+		if err := u.createUserVerificationToken(ctx, tx, token, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (u *UserStore) CreateRefreshToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error {
-	return nil
+	query := `
+		INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)
+	`
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := u.DB.ExecContext(ctx, query, userID, tokenHash, expiresAt)
+	return err
 }
 
 func (u *UserStore) DeleteExpiredRefreshTokens(ctx context.Context) error {
-	return nil
+	query := `
+		DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked = TRUE
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := u.DB.ExecContext(ctx, query)
+
+	return err
 }
 
 func (u *UserStore) DeleteUser(ctx context.Context, userID int64) error {
-	return nil
+	return util.WithTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		if err := u.deleteUser(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		if err := u.deleteUserVerificationToken(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
+// todo next
 func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	return nil, nil
 }
@@ -71,6 +108,72 @@ func (u *UserStore) GetUserByRefreshToken(ctx context.Context, tokenHash string)
 }
 
 func (u *UserStore) RevokeRefreshToken(ctx context.Context, tokenHash string) error {
+	return nil
+}
+
+func (u *UserStore) createUser(ctx context.Context, tx *sql.Tx, user *User) error {
+	query := `
+		INSERT INTO users (email, username, password) VALUES ($1, $2, $3) RETURNING id
+	`
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	if err := tx.QueryRowContext(ctx, query, user.Email, user.Username, user.Password).Scan(
+		&user.ID,
+	); err != nil {
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return util.ErrorDuplicateEmail
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_username_key"`:
+			return util.ErrorDuplicateUsername
+		default:
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *UserStore) createUserVerificationToken(ctx context.Context, tx *sql.Tx, token string, userID int64) error {
+	query := `INSERT INTO users_verification_tracking (token, user_id) VALUES ($1, $2)`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, token, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserStore) deleteUser(ctx context.Context, tx *sql.Tx, userID int64) error {
+	query := `DELETE FROM users WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserStore) deleteUserVerificationToken(ctx context.Context, tx *sql.Tx, userID int64) error {
+	query := `
+		DELETE FROM users_verification_tracking WHERE user_id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -113,21 +216,5 @@ func (u *UserStore) updateUser(ctx context.Context, tx *sql.Tx, user *User) erro
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (u *UserStore) deleteUserVerificationToken(ctx context.Context, tx *sql.Tx, userID int64) error {
-	query := `
-		DELETE FROM users_verification_tracking WHERE user_id = $1
-	`
-
-	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
-	defer cancel()
-
-	_, err := tx.ExecContext(ctx, query, userID)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
