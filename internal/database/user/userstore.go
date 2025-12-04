@@ -96,19 +96,77 @@ func (u *UserStore) DeleteUser(ctx context.Context, userID int64) error {
 
 // todo next
 func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	return nil, nil
+	query := `
+		SELECT id, password FROM users WHERE email = $1 AND is_verified = true
+	`
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	var user User
+
+	if err := u.DB.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.Password,
+	); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, util.ErrorNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &user, nil
 }
 
 func (u *UserStore) GetUserByID(ctx context.Context, userID int64) (*User, error) {
-	return nil, nil
+	query := `SELECT id, username, email FROM users u WHERE u.id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	var user User
+	if err := u.DB.QueryRowContext(ctx, query, userID).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+	); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func (u *UserStore) GetUserByRefreshToken(ctx context.Context, tokenHash string) (*User, error) {
-	return nil, nil
+	query := `
+		SELECT u.id FROM users u INNER JOIN refresh_tokens rt ON u.id = rt.user_id
+		WHERE rt.token_hash = $1 AND rt.expires_at > NOW() AND rt.revoked = false
+	`
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	var user User
+	if err := u.DB.QueryRowContext(ctx, query, tokenHash).Scan(
+		&user.ID,
+	); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, util.ErrorNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
 }
 
 func (u *UserStore) RevokeRefreshToken(ctx context.Context, tokenHash string) error {
-	return nil
+	query := `UPDATE refresh_tokens SET revoked = TRUE WHERE token_hash = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := u.DB.ExecContext(ctx, query, tokenHash)
+	return err
 }
 
 func (u *UserStore) createUser(ctx context.Context, tx *sql.Tx, user *User) error {
