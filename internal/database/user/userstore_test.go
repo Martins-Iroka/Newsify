@@ -88,9 +88,10 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("should create a user and verification token successfully", func(t *testing.T) {
+		setupTest(t)
 		user := &User{
 			Username: "testuser_container",
-			Email:    "container@example.com",
+			Email:    "container2@example.com",
 			Password: "hashedpassword123",
 		}
 		token := "verification-token-container"
@@ -114,6 +115,7 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 	})
 
 	t.Run("should fail with duplicate email", func(t *testing.T) {
+		setupTest(t)
 		user1 := &User{
 			Username: "user1",
 			Email:    "duplicate@example.com",
@@ -132,4 +134,164 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			t.Error("expected error for duplicate email, got nil")
 		}
 	})
+
+	t.Run("should create a user and verify that token was saved", func(t *testing.T) {
+		setupTest(t)
+		user := &User{
+			Username: "testuser_container2",
+			Email:    "container@example.com",
+			Password: "hashedpassword123",
+		}
+		token := "verification-token-test"
+
+		err := store.CreateUserAndVerificationToken(ctx, user, token)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if user.ID == 0 {
+			t.Error("expected user ID to be set")
+		}
+
+		var savedToken string
+		err = testDB.QueryRow(
+			"SELECT token FROM users_verification_tracking WHERE user_id = $1",
+			user.ID,
+		).Scan(&savedToken)
+
+		if err != nil {
+			t.Fatalf("failed to query token: %v", err)
+		}
+
+		if savedToken != token {
+			t.Errorf("expected token %s, got %s", token, savedToken)
+		}
+	})
+
+	t.Run("should rollback user creation on duplicate token", func(t *testing.T) {
+		setupTest(t)
+		user := &User{
+			Username: "user1",
+			Email:    "user1@test.com",
+			Password: "pass",
+		}
+		token := "duplicate-token"
+
+		err := store.CreateUserAndVerificationToken(ctx, user, token)
+		if err != nil {
+			t.Fatalf("failed to create first user: %v", err)
+		}
+
+		user2 := &User{
+			Username: "user2",
+			Email:    "user2@test.com",
+			Password: "pass",
+		}
+
+		err = store.CreateUserAndVerificationToken(ctx, user2, token)
+
+		if err == nil {
+			t.Fatal("expected error for duplicate token, got nil")
+		}
+
+		if user2.ID != 0 {
+			t.Fatalf("expected user2.ID to be 0 after failed creation, got %d", user2.ID)
+		}
+	})
 }
+
+func TestUserStoreCreateRefreshToken(t *testing.T) {
+
+	store := &UserStore{DB: testDB}
+	ctx := context.Background()
+	t.Run("should create refresh token", func(t *testing.T) {
+		setupTest(t)
+		user := &User{
+			Username: "username",
+			Email:    "test@t.com",
+			Password: "pass",
+		}
+
+		refreshToken := "new-refresh-token"
+
+		if err := store.CreateUserAndVerificationToken(ctx, user, "token"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if err := store.CreateRefreshToken(ctx, user.ID, refreshToken, time.Now()); err != nil {
+			t.Errorf("failed to create refresh token, error %v", err)
+		}
+
+		var savedToken string
+
+		err := testDB.QueryRow(
+			"SELECT token_hash FROM refresh_tokens WHERE user_id = $1",
+			user.ID,
+		).Scan(&savedToken)
+
+		if err != nil {
+			t.Fatalf("failed to query token: %v", err)
+		}
+
+		if savedToken != refreshToken {
+			t.Errorf("expected token %s, got %s", refreshToken, savedToken)
+		}
+	})
+}
+
+func TestUserStoreDeleteExpiredRefreshTokens(t *testing.T) {
+
+	store := &UserStore{DB: testDB}
+	ctx := context.Background()
+
+	t.Run("delete expired refresh tokens", func(t *testing.T) {
+		setupTest(t)
+		user := &User{
+			Username: "username",
+			Email:    "test@t.com",
+			Password: "pass",
+		}
+
+		if err := store.CreateUserAndVerificationToken(ctx, user, "verification-token"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if err := store.CreateRefreshToken(ctx, user.ID, "refresh-token", time.Now().Add(-time.Hour)); err != nil {
+			t.Fatalf("failed to create refresh token, error %v", err)
+		}
+
+		if err := store.RevokeRefreshToken(ctx, "refresh-token"); err != nil {
+			t.Fatalf("failed to revoke token, err %v", err)
+		}
+
+		if err := store.DeleteExpiredRefreshTokens(ctx); err != nil {
+			t.Fatalf("failed to delete expired token, err %v", err)
+		}
+
+		var savedToken string
+
+		err := testDB.QueryRow(
+			"SELECT token_hash FROM refresh_tokens WHERE user_id = $1",
+			user.ID,
+		).Scan(&savedToken)
+
+		if err == nil {
+			t.Fatalf("expected sql.ErrNoRows when querying deleted token, but query succeeded")
+		}
+	})
+}
+
+// func BenchmarkCreateUser(b *testing.B) {
+// 	store := &UserStore{DB: testDB}
+// 	ctx := context.Background()
+
+// 	b.ResetTimer()
+// 	for i := 0; i < b.N; i++ {
+// 		user := &User{
+// 			Username: fmt.Sprintf("bench%d", i),
+// 			Email:    fmt.Sprintf("bench%d@example.com", i),
+// 			Password: "pass",
+// 		}
+// 		store.CreateUserAndVerificationToken(ctx, user, fmt.Sprintf("token%d", i))
+// 	}
+// }
