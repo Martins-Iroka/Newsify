@@ -27,7 +27,7 @@ func (u *UserStore) ActivateUser(ctx context.Context, token string) error {
 	return util.WithTransaction(u.DB, ctx, func(tx *sql.Tx) error {
 		user, err := u.getUserByVerificationToken(ctx, tx, token)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		if err := u.updateUser(ctx, tx, user); err != nil {
@@ -94,7 +94,6 @@ func (u *UserStore) DeleteUser(ctx context.Context, userID int64) error {
 	})
 }
 
-// todo next
 func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
 		SELECT id, password FROM users WHERE email = $1 AND is_verified = true
@@ -197,7 +196,9 @@ func (u *UserStore) createUserVerificationToken(ctx context.Context, tx *sql.Tx,
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := tx.ExecContext(ctx, query, token, userID)
+	hash := sha256.Sum256([]byte(token))
+	hashToken := hex.EncodeToString(hash[:])
+	_, err := tx.ExecContext(ctx, query, hashToken, userID)
 	if err != nil {
 		return err
 	}

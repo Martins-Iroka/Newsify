@@ -2,7 +2,9 @@ package user
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +13,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -83,7 +86,6 @@ func setupTest(t *testing.T) {
 
 func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 	setupTest(t)
-
 	store := &UserStore{DB: testDB}
 	ctx := context.Background()
 
@@ -97,21 +99,13 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 		token := "verification-token-container"
 
 		err := store.CreateUserAndVerificationToken(ctx, user, token)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
+		assert.NoError(t, err)
 
-		if user.ID == 0 {
-			t.Error("expected user ID to be set")
-		}
+		assert.NotEqual(t, 0, user.ID)
 
 		savedUser, err := store.GetUserByID(ctx, user.ID)
-		if err != nil {
-			t.Fatalf("failed to get user: %v", err)
-		}
-		if savedUser.Email != user.Email {
-			t.Errorf("expected email %s, got %s", user.Email, savedUser.Email)
-		}
+		assert.Nil(t, err)
+		assert.Equal(t, user.Email, savedUser.Email)
 	})
 
 	t.Run("should fail with duplicate email", func(t *testing.T) {
@@ -129,10 +123,7 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			Password: "pw2",
 		}
 		err := store.CreateUserAndVerificationToken(ctx, user2, "token2")
-
-		if err == nil {
-			t.Error("expected error for duplicate email, got nil")
-		}
+		assert.NotNil(t, err)
 	})
 
 	t.Run("should create a user and verify that token was saved", func(t *testing.T) {
@@ -145,13 +136,9 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 		token := "verification-token-test"
 
 		err := store.CreateUserAndVerificationToken(ctx, user, token)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
+		assert.Nil(t, err)
 
-		if user.ID == 0 {
-			t.Error("expected user ID to be set")
-		}
+		assert.NotEqual(t, 0, user.ID)
 
 		var savedToken string
 		err = testDB.QueryRow(
@@ -159,13 +146,11 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			user.ID,
 		).Scan(&savedToken)
 
-		if err != nil {
-			t.Fatalf("failed to query token: %v", err)
-		}
+		assert.Nil(t, err)
+		hash := sha256.Sum256([]byte(token))
+		hashToken := hex.EncodeToString(hash[:])
 
-		if savedToken != token {
-			t.Errorf("expected token %s, got %s", token, savedToken)
-		}
+		assert.Equal(t, savedToken, hashToken)
 	})
 
 	t.Run("should rollback user creation on duplicate token", func(t *testing.T) {
@@ -194,13 +179,24 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			t.Fatal("expected error for duplicate token, got nil")
 		}
 
-		if user2.ID != 0 {
-			t.Fatalf("expected user2.ID to be 0 after failed creation, got %d", user2.ID)
+		_, err = store.GetUserByID(ctx, user2.ID)
+		if err == nil {
+			t.Error("get user by id should have returned an error")
+		}
+
+		savedUser, err := store.GetUserByID(ctx, user.ID)
+		if err != nil {
+			t.Fatalf("expected user1 to still exist, but got error: %v", err)
+		}
+
+		if savedUser.Email != user.Email {
+			t.Errorf("expected email %s, got %s", user.Email, savedUser.Email)
 		}
 	})
 }
 
-func TestUserStoreCreateRefreshToken(t *testing.T) {
+func TestUserStoreCreateRefreshTokenAndGetUserByRefreshToken(t *testing.T) {
+	setupTest(t)
 
 	store := &UserStore{DB: testDB}
 	ctx := context.Background()
@@ -214,28 +210,27 @@ func TestUserStoreCreateRefreshToken(t *testing.T) {
 
 		refreshToken := "new-refresh-token"
 
-		if err := store.CreateUserAndVerificationToken(ctx, user, "token"); err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		if err := store.CreateRefreshToken(ctx, user.ID, refreshToken, time.Now()); err != nil {
-			t.Errorf("failed to create refresh token, error %v", err)
-		}
+		err := store.CreateUserAndVerificationToken(ctx, user, "token")
+		assert.Nil(t, err)
+		err = store.CreateRefreshToken(ctx, user.ID, refreshToken, time.Now().Add(time.Hour))
+		assert.Nil(t, err)
 
 		var savedToken string
 
-		err := testDB.QueryRow(
+		err = testDB.QueryRow(
 			"SELECT token_hash FROM refresh_tokens WHERE user_id = $1",
 			user.ID,
 		).Scan(&savedToken)
 
-		if err != nil {
-			t.Fatalf("failed to query token: %v", err)
-		}
+		assert.Nil(t, err)
 
-		if savedToken != refreshToken {
-			t.Errorf("expected token %s, got %s", refreshToken, savedToken)
-		}
+		assert.Equal(t, refreshToken, savedToken)
+
+		u, err := store.GetUserByRefreshToken(ctx, refreshToken)
+
+		assert.Nil(t, err)
+
+		assert.Equal(t, user.ID, u.ID)
 	})
 }
 
@@ -252,32 +247,68 @@ func TestUserStoreDeleteExpiredRefreshTokens(t *testing.T) {
 			Password: "pass",
 		}
 
-		if err := store.CreateUserAndVerificationToken(ctx, user, "verification-token"); err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
+		err := store.CreateUserAndVerificationToken(ctx, user, "verification-token")
+		assert.Nil(t, err)
 
-		if err := store.CreateRefreshToken(ctx, user.ID, "refresh-token", time.Now().Add(-time.Hour)); err != nil {
-			t.Fatalf("failed to create refresh token, error %v", err)
-		}
+		err = store.CreateRefreshToken(ctx, user.ID, "refresh-token", time.Now().Add(-time.Hour))
+		assert.Nil(t, err)
 
-		if err := store.RevokeRefreshToken(ctx, "refresh-token"); err != nil {
-			t.Fatalf("failed to revoke token, err %v", err)
-		}
+		err = store.RevokeRefreshToken(ctx, "refresh-token")
+		assert.Nil(t, err)
 
-		if err := store.DeleteExpiredRefreshTokens(ctx); err != nil {
-			t.Fatalf("failed to delete expired token, err %v", err)
-		}
+		err = store.DeleteExpiredRefreshTokens(ctx)
+		assert.Nil(t, err)
 
 		var savedToken string
 
-		err := testDB.QueryRow(
+		err = testDB.QueryRow(
 			"SELECT token_hash FROM refresh_tokens WHERE user_id = $1",
 			user.ID,
 		).Scan(&savedToken)
 
-		if err == nil {
-			t.Fatalf("expected sql.ErrNoRows when querying deleted token, but query succeeded")
+		assert.NotNil(t, err)
+	})
+}
+
+func TestUserStoreActivateUserAndGetUserByEmail(t *testing.T) {
+	store := &UserStore{DB: testDB}
+	ctx := context.Background()
+
+	t.Run("activate user", func(t *testing.T) {
+		setupTest(t)
+		user := &User{
+			Username: "username",
+			Email:    "test@test.com",
+			Password: "pass",
 		}
+
+		token := "verification-token"
+
+		err := store.CreateUserAndVerificationToken(ctx, user, token)
+		assert.Nil(t, err)
+
+		err = store.ActivateUser(ctx, token)
+		assert.Nil(t, err)
+
+		var isVerified bool
+		err = testDB.QueryRow(
+			"SELECT is_verified FROM users WHERE id = $1", user.ID,
+		).Scan(&isVerified)
+		assert.Nil(t, err)
+
+		assert.True(t, isVerified)
+
+		var savedToken string
+
+		err = testDB.QueryRow(
+			"SELECT token FROM users_verification_tracking WHERE user_id = $1", user.ID,
+		).Scan(&savedToken)
+
+		assert.NotNil(t, err)
+
+		u, err := store.GetUserByEmail(ctx, user.Email)
+		assert.Nil(t, err)
+		assert.Equal(t, user.ID, u.ID)
 	})
 }
 
