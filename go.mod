@@ -65,6 +65,7 @@ require (
 )
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/testcontainers/testcontainers-go v0.40.0
