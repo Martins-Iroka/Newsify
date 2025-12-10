@@ -1,4 +1,4 @@
-package auth
+package jwt
 
 import (
 	"crypto/rand"
@@ -14,17 +14,28 @@ type JWTAuthenticator struct {
 	iss    string
 }
 
-func NewJWTAuthenticator(secret, aud, iss string) *JWTAuthenticator {
-	return &JWTAuthenticator{
-		secret, aud, iss,
+func NewJWTAuthenticator(secret, aud, iss string) (*JWTAuthenticator, error) {
+	if secret == "" {
+		return nil, fmt.Errorf("jwt: secret must not be empty")
 	}
+	if aud == "" {
+		return nil, fmt.Errorf("jwt: audience must not be empty")
+	}
+	if iss == "" {
+		return nil, fmt.Errorf("jwt: issuer must not be empty")
+	}
+	return &JWTAuthenticator{
+		secret: secret,
+		aud:    aud,
+		iss:    iss,
+	}, nil
 }
 
 func (j *JWTAuthenticator) GenerateToken(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(j.secret))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to sign JWT token: %w", err)
 	}
 
 	return tokenString, nil
@@ -34,7 +45,7 @@ func (j *JWTAuthenticator) GenerateRefreshToken() (string, error) {
 	token := make([]byte, 32)
 	_, err := rand.Read(token)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate random refresh token: %w", err)
 	}
 	return base64.URLEncoding.EncodeToString(token), nil
 }
