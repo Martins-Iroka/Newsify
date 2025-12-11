@@ -7,3 +7,8 @@ type Authenticator interface {
 	GenerateRefreshToken() (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
 }
+
+type OTPVerification interface {
+	SendVerificationCode(email string) error
+	VerifyCode(email, code string) error
+}
