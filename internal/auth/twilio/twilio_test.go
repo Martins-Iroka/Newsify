@@ -1,4 +1,4 @@
-package twilo
+package twilio
 
 import (
 	"errors"

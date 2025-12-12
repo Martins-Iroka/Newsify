@@ -1,4 +1,4 @@
-package twilo
+package twilio
 
 import (
 	"errors"
@@ -29,13 +29,13 @@ type TwilioVerification struct {
 	logger        *zap.SugaredLogger
 }
 
-func NewTwilioVerification(accountSID, authToken, serviceID string) *TwilioVerification {
+func NewTwilioVerification(accountSID, authToken, serviceID string, logger *zap.SugaredLogger) *TwilioVerification {
 	clientParam := twilio.ClientParams{
 		Username: accountSID,
 		Password: authToken,
 	}
 	client := twilio.NewRestClientWithParams(clientParam)
-	return &TwilioVerification{verifyService: client.VerifyV2, serviceID: serviceID}
+	return &TwilioVerification{verifyService: client.VerifyV2, serviceID: serviceID, logger: logger}
 }
 
 func (t *TwilioVerification) SendVerificationCode(email string) error {
