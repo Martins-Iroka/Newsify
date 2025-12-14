@@ -12,7 +12,6 @@ import (
 	"com.martdev.newsify/internal/auth/password"
 	dbuser "com.martdev.newsify/internal/database/user"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -36,11 +35,14 @@ type Service struct {
 	config config.Configuration
 }
 
-func NewService(store UserStorer, auth auth.Authenticator, otp auth.OTPVerification) *Service {
+// todo add role base login
+func NewService(store UserStorer, auth auth.Authenticator, otp auth.OTPVerification, logger *zap.SugaredLogger, config config.Configuration) *Service {
 	return &Service{
-		store: store,
-		auth:  auth,
-		otp:   otp,
+		store:  store,
+		auth:   auth,
+		otp:    otp,
+		logger: logger,
+		config: config,
 	}
 }
 
@@ -54,7 +56,7 @@ type TokenResponse struct {
 	Token string `json:"token"`
 }
 
-func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest) (*TokenResponse, error) {
+func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, verificationToken string) (*TokenResponse, error) {
 	hashedPassword, err := password.HashPassword(req.Password)
 	if err != nil {
 		return nil, err
@@ -66,14 +68,14 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest) (*T
 		Password: hashedPassword,
 	}
 
-	verificationToken := uuid.New().String()
+	// verificationToken := uuid.New().String()
 
 	if err := s.store.CreateUserAndVerificationToken(ctx, user, verificationToken); err != nil {
 		return nil, err
 	}
 
 	if err := s.otp.SendVerificationCode(user.Email); err != nil {
-		s.logger.Errorw("failed to send verification email", "email", user.Email, "error", err)
+		s.logger.Errorw("failed to send verification code", "email", user.Email, "error", err)
 		if deleteErr := s.store.DeleteUser(ctx, user.ID); deleteErr != nil {
 			s.logger.Errorw("error deleting user after email failure", "error", deleteErr, "email", user.Email)
 		} else {
