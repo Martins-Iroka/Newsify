@@ -397,4 +397,189 @@ func TestServiceLoginUser(t *testing.T) {
 		mockAuthenticator.AssertNotCalled(t, generateToken)
 		mockAuthenticator.AssertNotCalled(t, generateRefreshToken)
 	})
+
+	t.Run("generate token returns error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		hashedPassword, err := password.HashPassword("12345")
+		require.NoError(t, err)
+
+		existingUser := &dbuser.User{
+			ID:       5,
+			Email:    "test@example.com",
+			Password: hashedPassword,
+		}
+
+		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(existingUser, nil)
+
+		generateTokenError := errors.New("failed to generate token")
+		mockAuthenticator.On(generateToken, mock.Anything).Return("", generateTokenError)
+
+		response, err := service.LoginUser(t.Context(), req)
+		require.Nil(t, response)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, generateTokenError)
+
+		mockStore.AssertExpectations(t)
+		mockAuthenticator.AssertExpectations(t)
+	})
+
+	t.Run("generate refresh token returns error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		hashedPassword, err := password.HashPassword("12345")
+		require.NoError(t, err)
+
+		existingUser := &dbuser.User{
+			ID:       5,
+			Email:    "test@example.com",
+			Password: hashedPassword,
+		}
+
+		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(existingUser, nil)
+
+		mockAuthenticator.On(generateToken, mock.Anything).Return("access_token", nil)
+
+		generateRefreshTokenError := errors.New("failed to generate token")
+		mockAuthenticator.On(generateRefreshToken).Return("", generateRefreshTokenError)
+
+		response, err := service.LoginUser(t.Context(), req)
+		require.Nil(t, response)
+		require.Error(t, err)
+		require.ErrorIs(t, err, generateRefreshTokenError)
+
+		mockStore.AssertExpectations(t)
+		mockStore.AssertNotCalled(t, createRefreshToken)
+		mockAuthenticator.AssertExpectations(t)
+	})
+
+	t.Run("create refresh token returns error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		hashedPassword, err := password.HashPassword("12345")
+		require.NoError(t, err)
+
+		existingUser := &dbuser.User{
+			ID:       5,
+			Email:    "test@example.com",
+			Password: hashedPassword,
+		}
+
+		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(existingUser, nil)
+
+		mockAuthenticator.On(generateToken, mock.Anything).Return("access_token", nil)
+
+		mockAuthenticator.On(generateRefreshToken).Return("refresh_token", nil)
+
+		dbError := errors.New("failed to generate token")
+		mockStore.On(createRefreshToken, t.Context(), existingUser.ID, mock.Anything, mock.Anything).Return(dbError)
+
+		response, err := service.LoginUser(t.Context(), req)
+		require.Nil(t, response)
+		require.Error(t, err)
+		require.ErrorIs(t, err, dbError)
+
+		mockStore.AssertExpectations(t)
+		mockAuthenticator.AssertExpectations(t)
+	})
+}
+
+func TestRefreshtoken(t *testing.T) {
+
+	getUserByRefreshToken := "GetUserByRefreshToken"
+	generateToken := "GenerateToken"
+
+	req := RefreshTokenRequest{
+		RefreshToken: "refresh_token",
+	}
+
+	t.Run("refresh token successful", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		existingUser := &dbuser.User{
+			ID:    5,
+			Email: "test@example.com",
+		}
+		mockStore.On(getUserByRefreshToken, t.Context(), mock.Anything).Return(existingUser, nil)
+
+		mockAuthenticator.On(generateToken, mock.Anything).Return("new_access_token", nil)
+
+		response, err := service.RefreshToken(t.Context(), req)
+
+		require.NoError(t, err)
+		require.NotNil(t, response)
+		assert.Equal(t, "new_access_token", response.AccessToken)
+
+		mockStore.AssertExpectations(t)
+		mockAuthenticator.AssertExpectations(t)
+	})
+
+	t.Run("generate token returns error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		dbError := errors.New("no user found")
+		mockStore.On(getUserByRefreshToken, t.Context(), mock.Anything).Return(nil, dbError)
+
+		response, err := service.RefreshToken(t.Context(), req)
+
+		require.Error(t, err)
+		require.Nil(t, response)
+		assert.ErrorIs(t, err, dbError)
+
+		mockStore.AssertExpectations(t)
+		mockAuthenticator.AssertExpectations(t)
+		mockAuthenticator.AssertNotCalled(t, generateToken)
+	})
+
+	t.Run("refresh token successful", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		existingUser := &dbuser.User{
+			ID:    5,
+			Email: "test@example.com",
+		}
+		mockStore.On(getUserByRefreshToken, t.Context(), mock.Anything).Return(existingUser, nil)
+
+		generateTokenError := errors.New("error generating token")
+		mockAuthenticator.On(generateToken, mock.Anything).Return("", generateTokenError)
+
+		response, err := service.RefreshToken(t.Context(), req)
+
+		require.Error(t, err)
+		require.Nil(t, response)
+		assert.ErrorIs(t, err, generateTokenError)
+
+		mockStore.AssertExpectations(t)
+		mockAuthenticator.AssertExpectations(t)
+	})
 }
