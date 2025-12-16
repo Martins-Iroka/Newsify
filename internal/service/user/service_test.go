@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"com.martdev.newsify/config"
+	"com.martdev.newsify/internal/auth/password"
 	dbuser "com.martdev.newsify/internal/database/user"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
@@ -294,5 +295,106 @@ func TestVerifyUser(t *testing.T) {
 
 		mockOTP.AssertExpectations(t)
 		mockStore.AssertExpectations(t)
+	})
+}
+
+func TestServiceLoginUser(t *testing.T) {
+	getUserByEmail := "GetUserByEmail"
+	generateToken := "GenerateToken"
+	generateRefreshToken := "GenerateRefreshToken"
+	createRefreshToken := "CreateRefreshToken"
+
+	req := LoginUserRequest{
+		Email:    "test@example.com",
+		Password: "12345",
+	}
+
+	t.Run("user login successful", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		hashedPassword, err := password.HashPassword("12345")
+		require.NoError(t, err)
+
+		existingUser := &dbuser.User{
+			ID:       5,
+			Email:    "test@example.com",
+			Password: hashedPassword,
+		}
+
+		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(existingUser, nil)
+
+		mockAuthenticator.On(generateToken, mock.Anything).Return("accessToken", nil)
+
+		mockAuthenticator.On(generateRefreshToken).Return("refreshToken", nil)
+
+		mockStore.On(createRefreshToken, t.Context(), mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+		loginResponse, err := service.LoginUser(t.Context(), req)
+
+		require.NoError(t, err)
+		require.NotNil(t, loginResponse)
+		assert.Equal(t, "accessToken", loginResponse.AccessToken)
+		assert.Equal(t, "refreshToken", loginResponse.RefreshToken)
+		assert.Equal(t, int64(5), loginResponse.UserID)
+
+		mockStore.AssertExpectations(t)
+		mockAuthenticator.AssertExpectations(t)
+	})
+
+	t.Run("get user by email should return error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		dbError := errors.New("not found")
+		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(nil, dbError)
+
+		loginResponse, err := service.LoginUser(t.Context(), req)
+		require.Nil(t, loginResponse)
+		require.Error(t, err)
+		assert.Equal(t, dbError, err)
+
+		mockStore.AssertExpectations(t)
+		mockStore.AssertNotCalled(t, createRefreshToken)
+		mockAuthenticator.AssertNotCalled(t, generateToken)
+		mockAuthenticator.AssertNotCalled(t, generateRefreshToken)
+	})
+
+	t.Run("compare password returns error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTP := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
+
+		hashedPassword, err := password.HashPassword("123456")
+		require.NoError(t, err)
+
+		existingUser := &dbuser.User{
+			ID:       5,
+			Email:    "test@example.com",
+			Password: hashedPassword,
+		}
+
+		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(existingUser, nil)
+
+		loginResponse, err := service.LoginUser(t.Context(), req)
+		require.Nil(t, loginResponse)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "incorrect username or password")
+
+		mockStore.AssertExpectations(t)
+		mockStore.AssertNotCalled(t, createRefreshToken)
+		mockAuthenticator.AssertNotCalled(t, generateToken)
+		mockAuthenticator.AssertNotCalled(t, generateRefreshToken)
 	})
 }
