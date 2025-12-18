@@ -15,20 +15,16 @@ import (
 	"go.uber.org/zap"
 )
 
-type UserStorer interface {
-	ActivateUser(ctx context.Context, token string) error
-	CreateUserAndVerificationToken(ctx context.Context, user *dbuser.User, token string) error
-	CreateRefreshToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error
-	DeleteExpiredRefreshTokens(context.Context) error
-	DeleteUser(ctx context.Context, userID int64) error
-	GetUserByEmail(ctx context.Context, email string) (*dbuser.User, error)
-	GetUserByID(ctx context.Context, userID int64) (*dbuser.User, error)
-	GetUserByRefreshToken(ctx context.Context, tokenHash string) (*dbuser.User, error)
-	RevokeRefreshToken(ctx context.Context, tokenHash string) error
+type UserService interface {
+	RegisterUser(ctx context.Context, req RegisterUserRequest, token string) (*TokenResponse, error)
+	VerifyUser(ctx context.Context, req VerifyUserRequest) (*VerifyUserResponse, error)
+	LoginUser(ctx context.Context, req LoginUserRequest) (*LoginUserResponse, error)
+	RefreshToken(ctx context.Context, req RefreshTokenRequest) (*RefreshTokenResponse, error)
+	LogoutUser(ctx context.Context, refreshToken string) error
 }
 
 type Service struct {
-	store  UserStorer
+	store  dbuser.UserStorer
 	auth   auth.Authenticator
 	otp    auth.OTPVerification
 	logger *zap.SugaredLogger
@@ -36,7 +32,7 @@ type Service struct {
 }
 
 // todo add role base login
-func NewService(store UserStorer, auth auth.Authenticator, otp auth.OTPVerification, logger *zap.SugaredLogger, config config.Configuration) *Service {
+func NewService(store dbuser.UserStorer, auth auth.Authenticator, otp auth.OTPVerification, logger *zap.SugaredLogger, config config.Configuration) *Service {
 	return &Service{
 		store:  store,
 		auth:   auth,

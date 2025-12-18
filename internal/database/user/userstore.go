@@ -10,6 +10,17 @@ import (
 	"com.martdev.newsify/internal/util"
 )
 
+type UserStorer interface {
+	ActivateUser(ctx context.Context, token string) error
+	CreateUserAndVerificationToken(ctx context.Context, user *User, token string) error
+	CreateRefreshToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error
+	DeleteExpiredRefreshTokens(context.Context) error
+	DeleteUser(ctx context.Context, userID int64) error
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, userID int64) (*User, error)
+	GetUserByRefreshToken(ctx context.Context, tokenHash string) (*User, error)
+	RevokeRefreshToken(ctx context.Context, tokenHash string) error
+}
 type User struct {
 	ID         int64
 	Username   string
