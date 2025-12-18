@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users(
     username varchar(255) UNIQUE NOT NULL,
     password TEXT NOT NULL,
     is_verified boolean NOT NULL DEFAULT FALSE,
+    role TEXT NOT NULL,
     create_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
 );
 -- +goose StatementEnd

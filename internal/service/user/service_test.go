@@ -583,3 +583,43 @@ func TestRefreshtoken(t *testing.T) {
 		mockAuthenticator.AssertExpectations(t)
 	})
 }
+
+func TestLogoutUser(t *testing.T) {
+
+	revokeRefreshToken := "RevokeRefreshToken"
+
+	refreshToken := "refresh_token"
+
+	t.Run("revoke refresh token when user logs out", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTPVerification := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTPVerification, logger.Sugar(), config.Config)
+
+		mockStore.On(revokeRefreshToken, t.Context(), mock.Anything).Return(nil)
+
+		err := service.LogoutUser(t.Context(), refreshToken)
+		assert.NoError(t, err)
+		mockStore.AssertExpectations(t)
+	})
+
+	t.Run("revoke refresh token returns error", func(t *testing.T) {
+		mockStore := new(MockUserStorer)
+		mockAuthenticator := new(MockAuthenticator)
+		mockOTPVerification := new(MockOTPVerification)
+		logger := zaptest.NewLogger(t)
+
+		service := NewService(mockStore, mockAuthenticator, mockOTPVerification, logger.Sugar(), config.Config)
+
+		dbError := errors.New("db error")
+		mockStore.On(revokeRefreshToken, t.Context(), mock.Anything).Return(dbError)
+
+		err := service.LogoutUser(t.Context(), refreshToken)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, dbError)
+		mockStore.AssertExpectations(t)
+	})
+
+}

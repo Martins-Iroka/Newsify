@@ -219,13 +219,9 @@ func (s *Service) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*R
 	return &response, nil
 }
 
-type LogoutRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
+func (s *Service) LogoutUser(ctx context.Context, refreshToken string) error {
 
-func (s *Service) LogoutUser(ctx context.Context, req LogoutRequest) error {
-
-	hash := sha256.Sum256([]byte(req.RefreshToken))
+	hash := sha256.Sum256([]byte(refreshToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
 	if err := s.store.RevokeRefreshToken(ctx, tokenHash); err != nil {
