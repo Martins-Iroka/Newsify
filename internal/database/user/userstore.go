@@ -17,6 +17,7 @@ type User struct {
 	Password   string
 	IsVerified bool
 	CreatedAt  string
+	Role       string
 }
 
 type UserStore struct {
@@ -96,7 +97,7 @@ func (u *UserStore) DeleteUser(ctx context.Context, userID int64) error {
 
 func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, password FROM users WHERE email = $1 AND is_verified = true
+		SELECT id, password, role FROM users WHERE email = $1 AND is_verified = true
 	`
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
@@ -106,6 +107,7 @@ func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, er
 	if err := u.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.Password,
+		&user.Role,
 	); err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -118,7 +120,7 @@ func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, er
 }
 
 func (u *UserStore) GetUserByID(ctx context.Context, userID int64) (*User, error) {
-	query := `SELECT id, username, email FROM users u WHERE u.id = $1`
+	query := `SELECT id, username, email, role FROM users u WHERE u.id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
@@ -128,6 +130,7 @@ func (u *UserStore) GetUserByID(ctx context.Context, userID int64) (*User, error
 		&user.ID,
 		&user.Username,
 		&user.Email,
+		&user.Role,
 	); err != nil {
 		return nil, err
 	}
@@ -170,12 +173,12 @@ func (u *UserStore) RevokeRefreshToken(ctx context.Context, tokenHash string) er
 
 func (u *UserStore) createUser(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-		INSERT INTO users (email, username, password) VALUES ($1, $2, $3) RETURNING id
+		INSERT INTO users (email, username, password, role) VALUES ($1, $2, $3) RETURNING id
 	`
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
 
-	if err := tx.QueryRowContext(ctx, query, user.Email, user.Username, user.Password).Scan(
+	if err := tx.QueryRowContext(ctx, query, user.Email, user.Username, user.Password, user.Role).Scan(
 		&user.ID,
 	); err != nil {
 		switch {

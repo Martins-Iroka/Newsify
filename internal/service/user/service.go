@@ -68,8 +68,6 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, ver
 		Password: hashedPassword,
 	}
 
-	// verificationToken := uuid.New().String()
-
 	if err := s.store.CreateUserAndVerificationToken(ctx, user, verificationToken); err != nil {
 		return nil, err
 	}
