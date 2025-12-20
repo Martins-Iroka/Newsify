@@ -115,7 +115,7 @@ func (m *MockOTPVerification) VerifyCode(email, code string) error {
 
 func TestServiceRegisterUser(t *testing.T) {
 	req := RegisterUserRequest{
-		Email:    "test@example.com",
+		Email:    "test3@example.com",
 		Username: "username",
 		Password: "12345",
 	}
@@ -305,7 +305,7 @@ func TestServiceLoginUser(t *testing.T) {
 	createRefreshToken := "CreateRefreshToken"
 
 	req := LoginUserRequest{
-		Email:    "test@example.com",
+		Email:    "test7@example.com",
 		Password: "12345",
 	}
 
@@ -322,7 +322,7 @@ func TestServiceLoginUser(t *testing.T) {
 
 		existingUser := &dbuser.User{
 			ID:       5,
-			Email:    "test@example.com",
+			Email:    "test9@example.com",
 			Password: hashedPassword,
 		}
 
@@ -381,7 +381,7 @@ func TestServiceLoginUser(t *testing.T) {
 
 		existingUser := &dbuser.User{
 			ID:       5,
-			Email:    "test@example.com",
+			Email:    "test5@example.com",
 			Password: hashedPassword,
 		}
 
@@ -411,13 +411,13 @@ func TestServiceLoginUser(t *testing.T) {
 
 		existingUser := &dbuser.User{
 			ID:       5,
-			Email:    "test@example.com",
+			Email:    "test2@example.com",
 			Password: hashedPassword,
 		}
 
 		mockStore.On(getUserByEmail, t.Context(), req.Email).Return(existingUser, nil)
 
-		generateTokenError := errors.New("failed to generate token")
+		generateTokenError := errors.New("error failed to generate token")
 		mockAuthenticator.On(generateToken, mock.Anything).Return("", generateTokenError)
 
 		response, err := service.LoginUser(t.Context(), req)
@@ -442,7 +442,7 @@ func TestServiceLoginUser(t *testing.T) {
 
 		existingUser := &dbuser.User{
 			ID:       5,
-			Email:    "test@example.com",
+			Email:    "test1@example.com",
 			Password: hashedPassword,
 		}
 
@@ -476,7 +476,7 @@ func TestServiceLoginUser(t *testing.T) {
 
 		existingUser := &dbuser.User{
 			ID:       5,
-			Email:    "test@example.com",
+			Email:    "tes3t@example.com",
 			Password: hashedPassword,
 		}
 

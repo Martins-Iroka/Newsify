@@ -65,10 +65,11 @@ func TestRegisterUserHandler(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	handler := NewHandler(mockService, logger)
 	RegisterUser := "RegisterUser"
+	const registerPath = "/register"
 
 	t.Run("Success", func(t *testing.T) {
 		reqBody := userService.RegisterUserRequest{
-			Email:    "test@example.com",
+			Email:    "test1@example.com",
 			Username: "martdev",
 			Password: "123456",
 		}
@@ -81,7 +82,7 @@ func TestRegisterUserHandler(t *testing.T) {
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -103,7 +104,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -124,7 +125,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -142,7 +143,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -154,14 +155,14 @@ func TestRegisterUserHandler(t *testing.T) {
 
 	t.Run("password less than min", func(t *testing.T) {
 		reqBody := userService.RegisterUserRequest{
-			Email:    "e@example.com",
+			Email:    "test2@example.com",
 			Password: "12",
 			Username: "martdev",
 		}
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -173,14 +174,14 @@ func TestRegisterUserHandler(t *testing.T) {
 
 	t.Run("password greater than max", func(t *testing.T) {
 		reqBody := userService.RegisterUserRequest{
-			Email:    "e@example.com",
+			Email:    "test3@example.com",
 			Password: strings.Repeat("1", 73),
 			Username: "martdev",
 		}
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -198,7 +199,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -210,14 +211,14 @@ func TestRegisterUserHandler(t *testing.T) {
 
 	t.Run("username is greater than max", func(t *testing.T) {
 		reqBody := userService.RegisterUserRequest{
-			Email:    "e@example.com",
+			Email:    "test6@example.com",
 			Password: "123456",
 			Username: strings.Repeat("m", 101),
 		}
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -242,7 +243,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
@@ -264,12 +265,69 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		body, err := json.Marshal(reqBody)
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
 		w := httptest.NewRecorder()
 
 		handler.registerUserHandler(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		mockService.AssertExpectations(t)
+	})
+}
+
+func TestVerifyUser(t *testing.T) {
+	mockService := new(MockService)
+	logger := zaptest.NewLogger(t).Sugar()
+	handler := NewHandler(mockService, logger)
+	VerifyUser := "VerifyUser"
+	verifyPath := "/verify"
+
+	t.Run("verification successful", func(t *testing.T) {
+		reqBody := userService.VerifyUserRequest{
+			Code:  "123456",
+			Email: "testEmail@example.com",
+			Token: "verification_token",
+		}
+
+		response := &userService.VerifyUserResponse{
+			Status: "verified",
+		}
+
+		mockService.On(VerifyUser, mock.Anything, reqBody).Return(response, nil)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("unknown field added", func(t *testing.T) {
+		reqBody := struct {
+			Code    string `json:"code" validate:"required,len=6"`
+			Email   string `json:"email" validate:"required,email,max=255"`
+			Token   string `json:"token" validate:"required"`
+			Unknown string `json:"unknown"`
+		}{
+			Code:    "123456",
+			Email:   "ik@example.com",
+			Token:   "verification_token",
+			Unknown: "unknown",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertNotCalled(t, VerifyUser)
 	})
 }
