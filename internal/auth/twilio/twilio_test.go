@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	verify "github.com/twilio/twilio-go/rest/verify/v2"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 type MockVerifyService struct {
@@ -55,8 +55,7 @@ func TestSendVerificationCode(t *testing.T) {
 
 	t.Run("should retry on failure and eventually succeed", func(t *testing.T) {
 		mockService := new(MockVerifyService)
-		logger := zap.Must(zap.NewDevelopment()).Sugar()
-		defer logger.Sync()
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,
@@ -78,8 +77,7 @@ func TestSendVerificationCode(t *testing.T) {
 
 	t.Run("should fail after max retries", func(t *testing.T) {
 		mockService := new(MockVerifyService)
-		logger := zap.Must(zap.NewDevelopment()).Sugar()
-		defer logger.Sync()
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,
@@ -98,8 +96,7 @@ func TestSendVerificationCode(t *testing.T) {
 
 	t.Run("should handle nil sid response", func(t *testing.T) {
 		mockService := new(MockVerifyService)
-		logger := zap.Must(zap.NewDevelopment()).Sugar()
-		defer logger.Sync()
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,
@@ -125,8 +122,7 @@ func TestVerifyCode(t *testing.T) {
 
 	t.Run("should verify code successfully", func(t *testing.T) {
 		mockService := new(MockVerifyService)
-		logger := zap.Must(zap.NewDevelopment()).Sugar()
-		defer logger.Sync()
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,
@@ -143,8 +139,7 @@ func TestVerifyCode(t *testing.T) {
 
 	t.Run("should retry on failure", func(t *testing.T) {
 		mockService := new(MockVerifyService)
-		logger := zap.Must(zap.NewDevelopment()).Sugar()
-		defer logger.Sync()
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,
@@ -163,8 +158,7 @@ func TestVerifyCode(t *testing.T) {
 
 	t.Run("should fail after max retries", func(t *testing.T) {
 		mockService := new(MockVerifyService)
-		logger := zap.Must(zap.NewDevelopment()).Sugar()
-		defer logger.Sync()
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,

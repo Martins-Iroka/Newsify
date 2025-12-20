@@ -16,8 +16,8 @@ type Handler struct {
 	logger  *zap.SugaredLogger
 }
 
-func NewHandler(service userservice.UserService) *Handler {
-	return &Handler{service: service}
+func NewHandler(service userservice.UserService, logger *zap.SugaredLogger) *Handler {
+	return &Handler{service: service, logger: logger}
 }
 
 func (h *Handler) registerUserHandler(w http.ResponseWriter, r *http.Request) {
