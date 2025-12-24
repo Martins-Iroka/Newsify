@@ -330,4 +330,104 @@ func TestVerifyUser(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		mockService.AssertNotCalled(t, VerifyUser)
 	})
+
+	t.Run("wrong email format", func(t *testing.T) {
+		reqBody := userService.VerifyUserRequest{
+			Code:  "123456",
+			Email: "wrong email format",
+			Token: "verification_token",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertNotCalled(t, VerifyUser)
+	})
+
+	t.Run("code exceeds 6", func(t *testing.T) {
+		reqBody := userService.VerifyUserRequest{
+			Code:  "1234567",
+			Email: "mart@email.com",
+			Token: "verification_token",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertNotCalled(t, VerifyUser)
+	})
+
+	t.Run("no token sent", func(t *testing.T) {
+		reqBody := userService.VerifyUserRequest{
+			Code:  "123456",
+			Email: "mart@email.com",
+			Token: "",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertNotCalled(t, VerifyUser)
+	})
+
+	t.Run("not found error returned", func(t *testing.T) {
+		reqBody := userService.VerifyUserRequest{
+			Code:  "123456",
+			Email: "unknownEmail@test.com",
+			Token: "verification_token",
+		}
+
+		mockService.On(VerifyUser, mock.Anything, reqBody).Return(nil, util.ErrorNotFound)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("db error returns internal server error", func(t *testing.T) {
+		reqBody := userService.VerifyUserRequest{
+			Code:  "654321",
+			Email: "test1@email.com",
+			Token: "token",
+		}
+
+		dbError := errors.New("db error")
+
+		mockService.On(VerifyUser, mock.Anything, reqBody).Return(nil, dbError)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, verifyPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
 }
