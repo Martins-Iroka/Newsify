@@ -7,9 +7,10 @@ import (
 )
 
 type Configuration struct {
-	Addr       string
-	DB         dbConfig
-	AuthConfig authConfig
+	Addr         string
+	DB           dbConfig
+	AuthConfig   authConfig
+	TwilioConfig twilioConfig
 }
 
 type dbConfig struct {
@@ -22,6 +23,10 @@ type authConfig struct {
 	Secret string
 	Exp    time.Duration
 	Iss    string
+}
+
+type twilioConfig struct {
+	AccountSID, AuthToken, ServiceID string
 }
 
 var Config = initConfig()
@@ -39,6 +44,11 @@ func initConfig() Configuration {
 			Secret: env.GetString("AUTH_TOKEN_SECRET", "test"),
 			Exp:    time.Minute * 15,
 			Iss:    "Newsify",
+		},
+		TwilioConfig: twilioConfig{
+			AccountSID: env.GetString("TWILIO_ACCOUNT_SID", ""),
+			AuthToken:  env.GetString("TWILIO_AUTH_TOKEN", ""),
+			ServiceID:  env.GetString("TWILIO_SID", ""),
 		},
 	}
 }
