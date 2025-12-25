@@ -8,6 +8,6 @@ func (h *Handler) RegisterRoutes(r *chi.Mux) {
 		r.Post("/verify", h.verifyUserHandler)
 		r.Post("/login", h.loginUserHandler)
 		r.Post("/refresh", h.refreshTokenHandler)
-		r.Post("/logout", h.logoutUserHandler)
+		r.Post("{refreshToken}/logout", h.logoutUserHandler)
 	})
 }

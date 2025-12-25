@@ -12,6 +12,7 @@ import (
 
 	userService "com.martdev.newsify/internal/service/user"
 	"com.martdev.newsify/internal/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -134,7 +135,7 @@ func TestRegisterUserHandler(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 
-	t.Run("wrong email format", func(t *testing.T) {
+	t.Run("wrong login email format", func(t *testing.T) {
 		reqBody := userService.RegisterUserRequest{
 			Email:    "wrongEmailFormat",
 			Password: "123456",
@@ -426,6 +427,358 @@ func TestVerifyUser(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		handler.verifyUserHandler(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestLoginUser(t *testing.T) {
+
+	mockService := new(MockService)
+	logger := zaptest.NewLogger(t).Sugar()
+	LoginUser := "LoginUser"
+	loginPath := "/login"
+
+	t.Run("login successful", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "test2@email.com",
+			Password: "123456",
+		}
+
+		responseBody := &userService.LoginUserResponse{
+			AccessToken:  "access_token",
+			RefreshToken: "refresh_token",
+			UserID:       1,
+		}
+
+		mockService.On(LoginUser, mock.Anything, reqBody).Return(responseBody, nil)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("unknown json field", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := struct {
+			Email    string `json:"email" validate:"required,email,max=255"`
+			Password string `json:"password" validate:"required,min=5,max=72"`
+			Unknown  string `json:"unknown"`
+		}{
+			Email:    "test3@email.com",
+			Password: "hadbeldk",
+			Unknown:  "unknown",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, LoginUser)
+	})
+
+	t.Run("wrong email format entered", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "wrongemailformat",
+			Password: "jfidlfjeil",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, LoginUser)
+	})
+
+	t.Run("password is less than min", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "test15@email.com",
+			Password: "thyd",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, LoginUser)
+	})
+
+	t.Run("password is less than min", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "test25@email.com",
+			Password: "thyd",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, LoginUser)
+	})
+
+	t.Run("password is greater than max", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "test35@email.com",
+			Password: strings.Repeat("p", 73),
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, LoginUser)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "test45@email.com",
+			Password: "password567",
+		}
+
+		mockService.On(LoginUser, mock.Anything, reqBody).Return(nil, util.ErrorNotFound)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("db error returns internal server error", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.LoginUserRequest{
+			Email:    "test55@email.com",
+			Password: "password567",
+		}
+
+		dbError := errors.New("db error")
+		mockService.On(LoginUser, mock.Anything, reqBody).Return(nil, dbError)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, loginPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.loginUserHandler(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestRefreshToken(t *testing.T) {
+	mockService := new(MockService)
+	logger := zaptest.NewLogger(t).Sugar()
+	RefreshToken := "RefreshToken"
+	refreshTokenPath := "/refresh"
+
+	t.Run("refresh token successfully", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+
+		reqBody := userService.RefreshTokenRequest{
+			RefreshToken: "refresh_token",
+		}
+
+		responseBody := &userService.RefreshTokenResponse{
+			AccessToken: "access_token",
+		}
+		mockService.On(RefreshToken, mock.Anything, reqBody).Return(responseBody, nil)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, refreshTokenPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.refreshTokenHandler(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("passed unknown field to request", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := struct {
+			RefreshToken string `json:"refresh_token" validate:"required"`
+			Unknown      string `json:"unknown" validate:"required"`
+		}{
+			"refresh_token",
+			"unknown",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, refreshTokenPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.refreshTokenHandler(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, RefreshToken)
+	})
+
+	t.Run("passed unknown field to request", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := userService.RefreshTokenRequest{
+			RefreshToken: "",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, refreshTokenPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.refreshTokenHandler(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, RefreshToken)
+	})
+
+	t.Run("not found returns unauthorized error", func(t *testing.T) {
+		mockService := new(MockService)
+		logger := zaptest.NewLogger(t).Sugar()
+		handler := NewHandler(mockService, logger)
+
+		reqBody := userService.RefreshTokenRequest{
+			RefreshToken: "refresh_token",
+		}
+
+		mockService.On(RefreshToken, mock.Anything, reqBody).Return(nil, util.ErrorNotFound)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, refreshTokenPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.refreshTokenHandler(w, req)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("internal server error", func(t *testing.T) {
+		mockService := new(MockService)
+		logger := zaptest.NewLogger(t).Sugar()
+		handler := NewHandler(mockService, logger)
+
+		reqBody := userService.RefreshTokenRequest{
+			RefreshToken: "refresh_token",
+		}
+
+		dbError := errors.New("db error")
+		mockService.On(RefreshToken, mock.Anything, reqBody).Return(nil, dbError)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, refreshTokenPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.refreshTokenHandler(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestLogoutUser(t *testing.T) {
+	mockService := new(MockService)
+	logger := zaptest.NewLogger(t).Sugar()
+	LogoutUser := "LogoutUser"
+	logoutPath := "/logout"
+
+	t.Run("log user out", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+
+		refreshToken := "refresh-token"
+
+		mockService.On(LogoutUser, mock.Anything, refreshToken).Return(nil)
+
+		req := httptest.NewRequest(http.MethodPost, "/"+refreshToken+logoutPath, bytes.NewReader(nil))
+		w := httptest.NewRecorder()
+
+		chiRC := chi.NewRouteContext()
+		chiRC.URLParams.Add("refreshToken", refreshToken)
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiRC))
+
+		handler.logoutUserHandler(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("internal server error", func(t *testing.T) {
+		mockService := new(MockService)
+		logger := zaptest.NewLogger(t).Sugar()
+		handler := NewHandler(mockService, logger)
+
+		refreshToken := "refresh-token"
+
+		mockService.On(LogoutUser, mock.Anything, refreshToken).Return(errors.New("dberror"))
+
+		req := httptest.NewRequest(http.MethodPost, "/"+refreshToken+logoutPath, bytes.NewReader(nil))
+		w := httptest.NewRecorder()
+
+		chiRC := chi.NewRouteContext()
+		chiRC.URLParams.Add("refreshToken", refreshToken)
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiRC))
+
+		handler.logoutUserHandler(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		mockService.AssertExpectations(t)
