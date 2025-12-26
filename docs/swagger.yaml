@@ -1,0 +1,31 @@
+basePath: /v1
+host: localhost
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for Newsify. An application for users to get latest news on a variety
+    of topics.
+  termsOfService: http://swagger.io/terms/
+  title: Newsify API
+paths:
+  /health:
+    get:
+      description: Healthcheck endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Healthcheck
+      tags:
+      - ops
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

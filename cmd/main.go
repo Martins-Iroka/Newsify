@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"com.martdev.newsify/config"
+	"com.martdev.newsify/docs"
+	_ "com.martdev.newsify/docs"
 	userhandler "com.martdev.newsify/internal/api/user"
 	"com.martdev.newsify/internal/auth/jwt"
 	"com.martdev.newsify/internal/auth/twilio"
@@ -13,12 +15,32 @@ import (
 	userdatabase "com.martdev.newsify/internal/database/user"
 	"com.martdev.newsify/internal/env"
 	userservice "com.martdev.newsify/internal/service/user"
+	"com.martdev.newsify/internal/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
 )
 
+// @title						Newsify API
+// @description				API for Newsify. An application for users to get latest news on a variety of topics.
+// @termsOfService				http://swagger.io/terms/
+//
+// @contact.name				API Support
+// @contact.url				http://www.swagger.io/support
+// @contact.email				support@swagger.io
+//
+// @licence.name				Apache 2.0
+// @licence.url				http://www.apache.org/licenses/LICENSE-2.0.html
+//
+// @host						localhost
+// @BasePath					/v1
+//
+// @securityDefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						Authorization
+// @description
 func main() {
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	defer logger.Sync()
@@ -59,7 +81,12 @@ func main() {
 		&userStore, jwtAuthenticator, twilio, logger, config.Config,
 	)
 	userHandler := userhandler.NewHandler(userService, logger)
-	userHandler.RegisterRoutes(mux)
+	mux.Route("/v1", func(r chi.Router) {
+		r.Get("/health", healthCheckHandler)
+		docsURL := "/v1/swagger/doc.json"
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
+		userHandler.RegisterRoutes(r)
+	})
 
 	logger.Fatal(runServer(mux))
 }
@@ -86,6 +113,8 @@ func getChiMux() *chi.Mux {
 
 func runServer(mux http.Handler) error {
 
+	docs.SwaggerInfo.Host = "localhost:3000"
+	docs.SwaggerInfo.BasePath = "/v1"
 	srv := &http.Server{
 		Addr:         config.Config.Addr,
 		Handler:      mux,
@@ -97,4 +126,22 @@ func runServer(mux http.Handler) error {
 	log.Printf("server has started at %s", config.Config.Addr)
 
 	return srv.ListenAndServe()
+}
+
+// healthcheckHandler godoc
+//
+//	@Summary		Healthcheck
+//	@Description	Healthcheck endpoint
+//	@Tags			ops
+//	@Produce		json
+//	@Success		200	{object}	string	"ok"
+//	@Router			/health [get]
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	data := map[string]string{
+		"status": "ok",
+	}
+
+	if err := util.JSONResponse(w, http.StatusOK, data); err != nil {
+		util.InternalServerErrorResponse(w, r, err, nil)
+	}
 }

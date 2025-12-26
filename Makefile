@@ -13,5 +13,10 @@ goose-up:
 .PHONY: goose-down
 goose-down:
 	@goose $(GOOSE_DRIVER) $(DB_ADDR) down
+
+.PHONY: gen-docs
+gen-docs:
+	@swag init -d cmd && swag fmt
+
 %:
 	@:

@@ -1,0 +1,44 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API for Newsify. An application for users to get latest news on a variety of topics.",
+        "title": "Newsify API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        }
+    },
+    "host": "localhost",
+    "basePath": "/v1",
+    "paths": {
+        "/health": {
+            "get": {
+                "description": "Healthcheck endpoint",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ops"
+                ],
+                "summary": "Healthcheck",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
