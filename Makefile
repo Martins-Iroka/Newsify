@@ -16,7 +16,7 @@ goose-down:
 
 .PHONY: gen-docs
 gen-docs:
-	@swag init -d cmd && swag fmt
+	@swag init -d cmd,internal && swag fmt
 
 %:
 	@:
