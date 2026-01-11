@@ -8,7 +8,7 @@ goose-create:
 
 .PHONY: goose-up
 goose-up:
-	@goose $(GOOSE_DRIVER) $(DB_ADDR) up
+	@goose -dir $(MIGRATIONS_PATH) $(DB_ADDR) up
 
 .PHONY: goose-down
 goose-down:

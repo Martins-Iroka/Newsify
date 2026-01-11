@@ -27,3 +27,8 @@ func WithTransaction(db *sql.DB, ctx context.Context, fn func(*sql.Tx) error) er
 
 	return tx.Commit()
 }
+
+type PaginatedPostQuery struct {
+	Limit  int
+	Offset int
+}
