@@ -3,6 +3,7 @@ package creator
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"com.martdev.newsify/internal/util"
 )
@@ -19,7 +20,7 @@ type NewsArticleStorer interface {
 	GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*NewsArticle, error)
 	GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]NewsArticle, error)
 	DeleteNewsArticle(ctx context.Context, creatorID int64, articleID int64) error
-	UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) (*NewsArticle, error)
+	UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) error
 }
 
 type NewsArticleStore struct {
@@ -62,12 +63,35 @@ func (na *NewsArticleStore) GetNewsArticleById(ctx context.Context, creatorID in
 }
 
 func (na *NewsArticleStore) GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]NewsArticle, error) {
-	return []NewsArticle{}, nil
+	query := "SELECT * FROM news_article na WHERE na.creator_id = $1 ORDER BY na.created_at LIMIT $2 OFFSET $3"
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	rows, err := na.DB.QueryContext(ctx, query, creatorID, pagination.Limit, pagination.Offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var newsArticles []NewsArticle
+
+	for rows.Next() {
+		var newsArticle NewsArticle
+		if err := rows.Scan(
+			&newsArticle.ID,
+			&newsArticle.Title,
+		); err != nil {
+			return nil, err
+		}
+
+		newsArticles = append(newsArticles, newsArticle)
+	}
+	return newsArticles, nil
 }
 
 func (na *NewsArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int64, articleID int64) error {
 	query := `
-		DELETE FROM news_article WHERE id = $1 AND creator_id = $2
+		DELETE FROM news_article na WHERE na.id = $1 AND na.creator_id = $2
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
@@ -80,6 +104,24 @@ func (na *NewsArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int
 	return nil
 }
 
-func (na *NewsArticle) UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) (*NewsArticle, error) {
-	return nil, nil
+func (na *NewsArticleStore) UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) error {
+	query := `
+		UPDATE news_article na SET na.title = $1 AND na.content = $2 WHERE creator_id = $1 RETURNING na.id
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
+	defer cancel()
+
+	if err := na.DB.QueryRowContext(
+		ctx, query, newsArticle.Title, newsArticle.Content,
+	).Scan(&newsArticle.ID); err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return util.ErrorConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
 }
