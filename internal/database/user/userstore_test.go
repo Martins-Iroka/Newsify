@@ -27,9 +27,9 @@ func TestMain(m *testing.M) {
 	// 1. Start Postgres Container
 	pgContainer, err := postgres.Run(ctx,
 		"postgres:16-alpine",
-		postgres.WithDatabase("newsify_test"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("postgres"),
+		postgres.WithDatabase("newsify_user_test"),
+		postgres.WithUsername("testAdmin"),
+		postgres.WithPassword("testPassword"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
