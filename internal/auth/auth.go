@@ -9,6 +9,6 @@ type Authenticator interface {
 }
 
 type OTPVerification interface {
-	SendVerificationCode(email string) error
+	SendVerificationCode(email string) (string, error)
 	VerifyCode(email, code string) error
 }

@@ -47,7 +47,7 @@ func TestSendVerificationCode(t *testing.T) {
 		sid := "verification-sid-123"
 		mockService.On(createVerification, serviceID, mock.Anything).Return(&verify.VerifyV2Verification{Sid: &sid}, nil)
 
-		err := tv.SendVerificationCode(email)
+		_, err := tv.SendVerificationCode(email)
 		assert.NoError(t, err)
 		mockService.AssertExpectations(t)
 
@@ -70,7 +70,7 @@ func TestSendVerificationCode(t *testing.T) {
 		mockService.On(createVerification, serviceID, mock.Anything).
 			Return(&verify.VerifyV2Verification{Sid: &sid}, nil).Once()
 
-		err := tv.SendVerificationCode(email)
+		_, err := tv.SendVerificationCode(email)
 		assert.NoError(t, err)
 		mockService.AssertNumberOfCalls(t, createVerification, 3)
 	})
@@ -87,7 +87,7 @@ func TestSendVerificationCode(t *testing.T) {
 		mockService.On(createVerification, serviceID, mock.Anything).
 			Return(nil, errors.New("persistent error")).Times(maxRetries)
 
-		err := tv.SendVerificationCode(email)
+		_, err := tv.SendVerificationCode(email)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), ErrMaxRetriesExceeded.Error())
 
@@ -106,7 +106,7 @@ func TestSendVerificationCode(t *testing.T) {
 		mockService.On(createVerification, serviceID, mock.Anything).
 			Return(&verify.VerifyV2Verification{Sid: nil}, nil).Times(maxRetries)
 
-		err := tv.SendVerificationCode(email)
+		_, err := tv.SendVerificationCode(email)
 		assert.Error(t, err)
 
 		mockService.AssertNumberOfCalls(t, createVerification, maxRetries)

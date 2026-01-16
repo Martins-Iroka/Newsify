@@ -68,7 +68,7 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, ver
 		return nil, err
 	}
 
-	if err := s.otp.SendVerificationCode(user.Email); err != nil {
+	if _, err := s.otp.SendVerificationCode(user.Email); err != nil {
 		s.logger.Errorw("failed to send verification code", "email", user.Email, "error", err)
 		if deleteErr := s.store.DeleteUser(ctx, user.ID); deleteErr != nil {
 			s.logger.Errorw("error deleting user after email failure", "error", deleteErr, "email", user.Email)

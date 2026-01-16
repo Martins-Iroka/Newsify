@@ -38,7 +38,7 @@ func NewTwilioVerification(accountSID, authToken, serviceID string, logger *zap.
 	return &TwilioVerification{verifyService: client.VerifyV2, serviceID: serviceID, logger: logger}
 }
 
-func (t *TwilioVerification) SendVerificationCode(email string) error {
+func (t *TwilioVerification) SendVerificationCode(email string) (string, error) {
 	channelEmail := "email"
 	params := &verify.CreateVerificationParams{
 		To:      &email,
@@ -56,10 +56,10 @@ func (t *TwilioVerification) SendVerificationCode(email string) error {
 			time.Sleep(time.Second * time.Duration(i+1) * 2)
 			continue
 		} else if resp.Sid != nil {
-			return nil
+			return "", nil
 		}
 	}
-	return fmt.Errorf("%w: %v", ErrMaxRetriesExceeded, lastErr)
+	return "", fmt.Errorf("%w: %v", ErrMaxRetriesExceeded, lastErr)
 }
 
 func (t *TwilioVerification) VerifyCode(email, code string) error {

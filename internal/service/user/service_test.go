@@ -103,9 +103,9 @@ type MockOTPVerification struct {
 	mock.Mock
 }
 
-func (m *MockOTPVerification) SendVerificationCode(email string) error {
+func (m *MockOTPVerification) SendVerificationCode(email string) (string, error) {
 	args := m.Called(email)
-	return args.Error(0)
+	return args.String(0), args.Error(1)
 }
 
 func (m *MockOTPVerification) VerifyCode(email, code string) error {
