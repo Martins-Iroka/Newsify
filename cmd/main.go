@@ -10,7 +10,7 @@ import (
 	_ "com.martdev.newsify/docs"
 	userhandler "com.martdev.newsify/internal/api/user"
 	"com.martdev.newsify/internal/auth/jwt"
-	"com.martdev.newsify/internal/auth/twilio"
+	"com.martdev.newsify/internal/auth/stytch"
 	"com.martdev.newsify/internal/database"
 	userdatabase "com.martdev.newsify/internal/database/user"
 	"com.martdev.newsify/internal/env"
@@ -60,12 +60,14 @@ func main() {
 
 	mux := getChiMux()
 
-	twilio := twilio.NewTwilioVerification(
-		config.Config.TwilioConfig.AccountSID,
-		config.Config.TwilioConfig.AuthToken,
-		config.Config.TwilioConfig.ServiceID,
+	stytch, err := stytch.NewStytchVerification(
+		config.Config.StytchConfig.ProjectID,
+		config.Config.StytchConfig.Secret,
 		logger,
 	)
+	if err != nil {
+		logger.Errorf("error from stytch %v", err)
+	}
 
 	jwtAuthenticator, err := jwt.NewJWTAuthenticator(
 		config.Config.AuthConfig.Secret,
@@ -78,7 +80,7 @@ func main() {
 
 	userStore := userdatabase.UserStore{DB: db}
 	userService := userservice.NewService(
-		&userStore, jwtAuthenticator, twilio, logger, config.Config,
+		&userStore, jwtAuthenticator, stytch, logger, config.Config,
 	)
 	userHandler := userhandler.NewHandler(userService, logger)
 	mux.Route("/v1", func(r chi.Router) {

@@ -10,7 +10,7 @@ type Configuration struct {
 	Addr         string
 	DB           dbConfig
 	AuthConfig   authConfig
-	TwilioConfig twilioConfig
+	StytchConfig stytchConfig
 }
 
 type dbConfig struct {
@@ -25,8 +25,8 @@ type authConfig struct {
 	Iss    string
 }
 
-type twilioConfig struct {
-	AccountSID, AuthToken, ServiceID string
+type stytchConfig struct {
+	ProjectID, Secret string
 }
 
 var Config = initConfig()
@@ -45,10 +45,9 @@ func initConfig() Configuration {
 			Exp:    time.Minute * 15,
 			Iss:    "Newsify",
 		},
-		TwilioConfig: twilioConfig{
-			AccountSID: env.GetString("TWILIO_ACCOUNT_SID", ""),
-			AuthToken:  env.GetString("TWILIO_AUTH_TOKEN", ""),
-			ServiceID:  env.GetString("TWILIO_SID", ""),
+		StytchConfig: stytchConfig{
+			ProjectID: env.GetString("STYTCH_PROJECT_ID", ""),
+			Secret:    env.GetString("STYTCH_SECRET", ""),
 		},
 	}
 }
