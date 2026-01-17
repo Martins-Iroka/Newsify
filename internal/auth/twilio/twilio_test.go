@@ -39,9 +39,11 @@ func TestSendVerificationCode(t *testing.T) {
 
 	t.Run("should send verification code successfully", func(t *testing.T) {
 		mockService := new(MockVerifyService)
+		logger := zaptest.NewLogger(t).Sugar()
 		tv := &TwilioVerification{
 			verifyService: mockService,
 			serviceID:     serviceID,
+			logger:        logger,
 		}
 
 		sid := "verification-sid-123"

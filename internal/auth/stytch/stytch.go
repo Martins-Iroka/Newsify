@@ -19,18 +19,27 @@ var (
 
 const maxRetries = 3
 
-// integrate this in main in place of twilo
-type StytchVerification struct {
-	client *stytchapi.API
-	logger *zap.SugaredLogger
+type StytchEmailOTPService interface {
+	LoginOrCreate(context.Context, *email.LoginOrCreateParams) (*email.LoginOrCreateResponse, error)
 }
 
-func NewStytchVerification(projectID, secret string) (*StytchVerification, error) {
+type StytchOTPAuthService interface {
+	Authenticate(context.Context, *otp.AuthenticateParams) (*otp.AuthenticateResponse, error)
+}
+
+// integrate this in main in place of twilo
+type StytchVerification struct {
+	logger                 *zap.SugaredLogger
+	emailOTPService        StytchEmailOTPService
+	stytchOTPAuthenticator StytchOTPAuthService
+}
+
+func NewStytchVerification(projectID, secret string, logger *zap.SugaredLogger) (*StytchVerification, error) {
 	client, err := stytchapi.NewClient(projectID, secret)
 	if err != nil {
 		return nil, err
 	}
-	return &StytchVerification{client: client}, nil
+	return &StytchVerification{logger: logger, emailOTPService: client.OTPs.Email, stytchOTPAuthenticator: client.OTPs}, nil
 }
 
 func (sv *StytchVerification) SendVerificationCode(userEmail string) (string, error) {
@@ -41,7 +50,7 @@ func (sv *StytchVerification) SendVerificationCode(userEmail string) (string, er
 
 	lastErr := ""
 	for i := range maxRetries {
-		resp, err := sv.client.OTPs.Email.LoginOrCreate(context.Background(), params)
+		resp, err := sv.emailOTPService.LoginOrCreate(context.Background(), params)
 		if err != nil {
 			sv.logger.Warn("failed to send verification code",
 				zap.Int("attempt", i+1),
@@ -67,7 +76,7 @@ func (sv *StytchVerification) VerifyCode(emailId, code string) error {
 		SessionDurationMinutes: 60,
 	}
 	for i := range maxRetries {
-		resp, err := sv.client.OTPs.Authenticate(context.Background(), params)
+		resp, err := sv.stytchOTPAuthenticator.Authenticate(context.Background(), params)
 		if err != nil {
 			sv.logger.Warn("verification attempt failed",
 				zap.Int("attempt", i+1),
