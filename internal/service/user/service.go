@@ -16,11 +16,12 @@ import (
 )
 
 type UserService interface {
-	RegisterUser(ctx context.Context, req RegisterUserRequest, token string) (*TokenResponse, error)
+	RegisterUser(ctx context.Context, req RegisterUserRequest, token string) (*RegisterUserResponse, error)
 	VerifyUser(ctx context.Context, req VerifyUserRequest) (*VerifyUserResponse, error)
 	LoginUser(ctx context.Context, req LoginUserRequest) (*LoginUserResponse, error)
 	RefreshToken(ctx context.Context, req RefreshTokenRequest) (*RefreshTokenResponse, error)
 	LogoutUser(ctx context.Context, refreshToken string) error
+	ResendOTP(ctx context.Context, req ResendOTPRequest) (*ResendOTPResponse, error)
 }
 
 type Service struct {
@@ -48,11 +49,12 @@ type RegisterUserRequest struct {
 	Username string `json:"username" validate:"required,max=100"`
 }
 
-type TokenResponse struct {
-	Token string `json:"token"`
+type RegisterUserResponse struct {
+	EmailID string `json:"email_id"`
+	Token   string `json:"token"`
 }
 
-func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, verificationToken string) (*TokenResponse, error) {
+func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, verificationToken string) (*RegisterUserResponse, error) {
 	hashedPassword, err := password.HashPassword(req.Password)
 	if err != nil {
 		return nil, err
@@ -68,7 +70,7 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, ver
 		return nil, err
 	}
 
-	if _, err := s.otp.SendVerificationCode(user.Email); err != nil {
+	if emailID, err := s.otp.SendVerificationCode(user.Email); err != nil {
 		s.logger.Errorw("failed to send verification code", "email", user.Email, "error", err)
 		if deleteErr := s.store.DeleteUser(ctx, user.ID); deleteErr != nil {
 			s.logger.Errorw("error deleting user after email failure", "error", deleteErr, "email", user.Email)
@@ -76,13 +78,13 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, ver
 			s.logger.Infow("user deleted after email failure", "user_id", user.ID)
 		}
 		return nil, err
+	} else {
+		tokenResponse := &RegisterUserResponse{
+			EmailID: emailID,
+			Token:   verificationToken,
+		}
+		return tokenResponse, nil
 	}
-
-	tokenResponse := &TokenResponse{
-		Token: verificationToken,
-	}
-
-	return tokenResponse, nil
 }
 
 type VerifyUserRequest struct {
@@ -134,6 +136,10 @@ func (s *Service) LoginUser(ctx context.Context, req LoginUserRequest) (*LoginUs
 
 	if err := password.ComparePasswords(user.Password, req.Password); err != nil {
 		return nil, errors.New("incorrect username or password")
+	}
+
+	if !user.IsVerified {
+		return nil, errors.New("user is not verified")
 	}
 
 	claims := jwt.MapClaims{
@@ -222,4 +228,33 @@ func (s *Service) LogoutUser(ctx context.Context, refreshToken string) error {
 		return err
 	}
 	return nil
+}
+
+type ResendOTPRequest struct {
+	Email string `json:"email" validate:"required,email,max=255"`
+}
+
+type ResendOTPResponse struct {
+	EmailID string `json:"email_id"`
+}
+
+// test this
+func (s *Service) ResendOTP(ctx context.Context, req ResendOTPRequest) (*ResendOTPResponse, error) {
+	user, err := s.store.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		s.logger.Errorw("failed to get user by email", "email", req.Email, "error", err)
+		return nil, err
+	}
+
+	emailID, err := s.otp.SendVerificationCode(user.Email)
+	if err != nil {
+		s.logger.Errorw("failed to resend verification code", "email", user.Email, "error", err)
+		return nil, err
+	}
+
+	response := &ResendOTPResponse{
+		EmailID: emailID,
+	}
+
+	return response, nil
 }

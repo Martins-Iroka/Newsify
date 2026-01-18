@@ -195,6 +195,24 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 	})
 }
 
+// func TestGetUserByEmail(t *testing.T) {
+// 	setupTest(t)
+// 	store := &UserStore{DB: testDB}
+
+// 	user := &User{
+// 		Username: "martdev",
+// 		Email:    "martdev@test.com",
+// 		Password: "martPass",
+// 		Role:     "reader",
+// 	}
+// 	query := `INSERT INTO users (email, username, password, role) VALUES ($1, $2, $3, $4)`
+// 	_, err := testDB.ExecContext(t.Context(), query, user.Email, user.Username, user.Password, user.Role)
+// 	require.NoError(t, err)
+
+// 	_, err = store.GetUserByEmail(t.Context(), user.Email)
+// 	assert.Error(t, err)
+// }
+
 func TestUserStoreCreateRefreshTokenAndGetUserByRefreshToken(t *testing.T) {
 	setupTest(t)
 

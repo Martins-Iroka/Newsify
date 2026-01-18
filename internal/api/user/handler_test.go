@@ -23,13 +23,13 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) RegisterUser(ctx context.Context, req userService.RegisterUserRequest, token string) (*userService.TokenResponse, error) {
+func (m *MockService) RegisterUser(ctx context.Context, req userService.RegisterUserRequest, token string) (*userService.RegisterUserResponse, error) {
 	arg := m.Called(ctx, req, token)
 	if arg.Get(0) == nil {
 		return nil, arg.Error(1)
 	}
 
-	return arg.Get(0).(*userService.TokenResponse), arg.Error(1)
+	return arg.Get(0).(*userService.RegisterUserResponse), arg.Error(1)
 }
 
 func (m *MockService) VerifyUser(ctx context.Context, req userService.VerifyUserRequest) (*userService.VerifyUserResponse, error) {
@@ -75,7 +75,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Password: "123456",
 		}
 
-		expectResp := &userService.TokenResponse{Token: "verification-token"}
+		expectResp := &userService.RegisterUserResponse{Token: "verification-token"}
 
 		mockService.On(RegisterUser, mock.Anything, reqBody, mock.AnythingOfType("string")).
 			Return(expectResp, nil)

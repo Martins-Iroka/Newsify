@@ -108,7 +108,7 @@ func (u *UserStore) DeleteUser(ctx context.Context, userID int64) error {
 
 func (u *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, password, role FROM users WHERE email = $1 AND is_verified = true
+		SELECT id, password, role FROM users WHERE email = $1
 	`
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
