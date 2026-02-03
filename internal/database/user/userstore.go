@@ -54,6 +54,7 @@ func (u *UserStore) ActivateUser(ctx context.Context, token string) error {
 	})
 }
 
+// check for unverified user before proceeding
 func (u *UserStore) CreateUserAndVerificationToken(ctx context.Context, user *User, token string) error {
 	return util.WithTransaction(u.DB, ctx, func(tx *sql.Tx) error {
 		if err := u.createUser(ctx, tx, user); err != nil {

@@ -52,11 +52,15 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -93,15 +97,21 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -133,16 +143,65 @@ const docTemplate = `{
                     "201": {
                         "description": "User registration token",
                         "schema": {
-                            "$ref": "#/definitions/user.TokenResponse"
+                            "$ref": "#/definitions/user.RegisterUserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/authentication/resendOTP": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "Resend OTP",
+                "parameters": [
+                    {
+                        "description": "Resend OTP",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.ResendOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent",
+                        "schema": {
+                            "$ref": "#/definitions/user.ResendOTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -176,11 +235,51 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/authentication/{refreshToken}/logout": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "Logout user",
+                "parameters": [
+                    {
+                        "description": "Refresh token to revoke",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -267,10 +366,33 @@ const docTemplate = `{
                 }
             }
         },
-        "user.TokenResponse": {
+        "user.RegisterUserResponse": {
             "type": "object",
             "properties": {
+                "email_id": {
+                    "type": "string"
+                },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.ResendOTPRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 255
+                }
+            }
+        },
+        "user.ResendOTPResponse": {
+            "type": "object",
+            "properties": {
+                "email_id": {
                     "type": "string"
                 }
             }
@@ -291,6 +413,14 @@ const docTemplate = `{
                     "maxLength": 255
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "util.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
                     "type": "string"
                 }
             }

@@ -61,6 +61,14 @@ func (m *MockService) LogoutUser(ctx context.Context, refreshToken string) error
 	return arg.Error(0)
 }
 
+func (m *MockService) ResendOTP(ctx context.Context, req userService.ResendOTPRequest) (*userService.ResendOTPResponse, error) {
+	arg := m.Called(ctx, req)
+	if arg.Get(0) == nil {
+		return nil, arg.Error(1)
+	}
+	return arg.Get(0).(*userService.ResendOTPResponse), arg.Error(1)
+}
+
 func TestRegisterUserHandler(t *testing.T) {
 	mockService := new(MockService)
 	logger := zaptest.NewLogger(t).Sugar()
@@ -668,7 +676,7 @@ func TestRefreshToken(t *testing.T) {
 		mockService.AssertNotCalled(t, RefreshToken)
 	})
 
-	t.Run("passed unknown field to request", func(t *testing.T) {
+	t.Run("passed empty refresh token request", func(t *testing.T) {
 		handler := NewHandler(mockService, logger)
 		reqBody := userService.RefreshTokenRequest{
 			RefreshToken: "",
@@ -779,6 +787,82 @@ func TestLogoutUser(t *testing.T) {
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiRC))
 
 		handler.logoutUserHandler(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestResendOTP(t *testing.T) {
+	mockService := new(MockService)
+	logger := zaptest.NewLogger(t).Sugar()
+	ResendOTP := "ResendOTP"
+	resendOtpPath := "/resendOTP"
+
+	t.Run("resend otp", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+
+		reqBody := userService.ResendOTPRequest{
+			Email: "testResend@e.com",
+		}
+		responseBody := &userService.ResendOTPResponse{
+			EmailID: "email_id",
+		}
+		mockService.On(ResendOTP, mock.Anything, reqBody).Return(responseBody, nil)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, resendOtpPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.resendOTPHandler(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("passed unknown field to request", func(t *testing.T) {
+		handler := NewHandler(mockService, logger)
+		reqBody := struct {
+			Email   string `json:"email" validate:"required,email,max=255"`
+			Unknown string `json:"unknown"`
+		}{
+			"testResend2@e.com",
+			"unknown",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, resendOtpPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.resendOTPHandler(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, ResendOTP)
+	})
+
+	t.Run("internal server error", func(t *testing.T) {
+		mockService := new(MockService)
+		logger := zaptest.NewLogger(t).Sugar()
+		handler := NewHandler(mockService, logger)
+
+		reqBody := userService.ResendOTPRequest{
+			Email: "testResend3@e.com",
+		}
+
+		dbError := errors.New("otp provider failed to send otp")
+		mockService.On(ResendOTP, mock.Anything, reqBody).Return(nil, dbError)
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, resendOtpPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.resendOTPHandler(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		mockService.AssertExpectations(t)

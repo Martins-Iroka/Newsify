@@ -28,9 +28,9 @@ func NewHandler(service userservice.UserService, logger *zap.SugaredLogger) *Han
 //	@accept		json
 //	@produce	json
 //	@param		payload	body		user.RegisterUserRequest	true	"User credentials"
-//	@success	201		{object}	user.TokenResponse			"User registration token"
-//	@failure	400		{object}	error
-//	@failure	500		{object}	error
+//	@success	201		{object}	user.RegisterUserResponse	"User registration token"
+//	@failure	400		{object}	util.ErrorResponse
+//	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/register [post]
 func (h *Handler) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	var req userservice.RegisterUserRequest
@@ -71,8 +71,8 @@ func (h *Handler) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@produce	json
 //	@param		payload	body	user.VerifyUserRequest	true	"User verification credentials"
 //	@success	204
-//	@failure	400	{object}	error
-//	@failure	500	{object}	error
+//	@failure	400	{object}	util.ErrorResponse
+//	@failure	500	{object}	util.ErrorResponse
 //	@router		/authentication/verify [post]
 func (h *Handler) verifyUserHandler(w http.ResponseWriter, r *http.Request) {
 	var req userservice.VerifyUserRequest
@@ -110,8 +110,8 @@ func (h *Handler) verifyUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@produce	json
 //	@param		payload	body		user.LoginUserRequest	true	"User login credentials"
 //	@success	200		{string}	Token					"User token"
-//	@failure	400		{object}	error
-//	@failure	500		{object}	error
+//	@failure	400		{object}	util.ErrorResponse
+//	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/login [post]
 func (h *Handler) loginUserHandler(w http.ResponseWriter, r *http.Request) {
 	var req userservice.LoginUserRequest
@@ -150,9 +150,9 @@ func (h *Handler) loginUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@produce	json
 //	@param		payload	body		user.RefreshTokenRequest	true	"Refresh token"
 //	@success	200		{object}	user.RefreshTokenResponse	"New access token"
-//	@failure	400		{object}	error
-//	@failure	401		{object}	error
-//	@failure	500		{object}	error
+//	@failure	400		{object}	util.ErrorResponse
+//	@failure	401		{object}	util.ErrorResponse
+//	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/refresh [post]
 func (h *Handler) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var req userservice.RefreshTokenRequest
@@ -189,9 +189,9 @@ func (h *Handler) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 //	@tags		authentication
 //	@accept		json
 //	@produce	json
-//	@param		payload	body	LogoutRequestPayload	true	"Refresh token to revoke"
+//	@param		payload	body	string	true	"Refresh token to revoke"
 //	@success	204		"No content"
-//	@failure	500		{object}	error
+//	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/{refreshToken}/logout [post]
 func (h *Handler) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
 	refreshToken := chi.URLParam(r, "refreshToken")
@@ -202,4 +202,37 @@ func (h *Handler) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// ResendOTPHandler godoc
+//
+//	@summary	Resend OTP
+//	@tags		authentication
+//	@accept		json
+//	@produce	json
+//	@param		payload	body		user.ResendOTPRequest	true	"Resend OTP"
+//	@success	200		{object}	user.ResendOTPResponse	"OTP sent"
+//	@failure	400		{object}	util.ErrorResponse
+//	@failure	500		{object}	util.ErrorResponse
+//	@router		/authentication/resendOTP [post]
+func (h *Handler) resendOTPHandler(w http.ResponseWriter, r *http.Request) {
+	var payload userservice.ResendOTPRequest
+
+	if err := util.ReadJSON(w, r, &payload); err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	if err := util.Validate.Struct(payload); err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	if response, err := h.service.ResendOTP(r.Context(), payload); err != nil {
+		util.InternalServerErrorResponse(w, r, err, h.logger)
+	} else {
+		if err := util.JSONResponse(w, http.StatusOK, response); err != nil {
+			util.InternalServerErrorResponse(w, r, err, h.logger)
+		}
+	}
 }

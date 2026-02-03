@@ -9,6 +9,10 @@ import (
 
 var Validate *validator.Validate
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func init() {
 	Validate = validator.New(validator.WithRequiredStructEnabled())
 }
@@ -30,11 +34,8 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 }
 
 func writeJSONError(w http.ResponseWriter, status int, message string) error {
-	type envelope struct {
-		Error string `json:"error"`
-	}
 
-	return writeJSON(w, status, &envelope{message})
+	return writeJSON(w, status, &ErrorResponse{message})
 }
 
 func JSONResponse(w http.ResponseWriter, status int, data any) error {

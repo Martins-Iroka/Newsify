@@ -9,5 +9,6 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Post("/login", h.loginUserHandler)
 		r.Post("/refresh", h.refreshTokenHandler)
 		r.Post("/{refreshToken}/logout", h.logoutUserHandler)
+		r.Post("/resendOTP", h.resendOTPHandler)
 	})
 }

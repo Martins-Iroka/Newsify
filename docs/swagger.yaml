@@ -42,9 +42,24 @@ definitions:
     - password
     - username
     type: object
-  user.TokenResponse:
+  user.RegisterUserResponse:
     properties:
+      email_id:
+        type: string
       token:
+        type: string
+    type: object
+  user.ResendOTPRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+    required:
+    - email
+    type: object
+  user.ResendOTPResponse:
+    properties:
+      email_id:
         type: string
     type: object
   user.VerifyUserRequest:
@@ -61,6 +76,11 @@ definitions:
     - email
     - token
     type: object
+  util.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
 host: localhost
 info:
   contact:
@@ -72,6 +92,29 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Newsify API
 paths:
+  /authentication/{refreshToken}/logout:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Refresh token to revoke
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Logout user
+      tags:
+      - authentication
   /authentication/login:
     post:
       consumes:
@@ -92,10 +135,12 @@ paths:
             type: string
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
       summary: User login
       tags:
       - authentication
@@ -119,13 +164,16 @@ paths:
             $ref: '#/definitions/user.RefreshTokenResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "401":
           description: Unauthorized
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
       summary: Refresh access token
       tags:
       - authentication
@@ -146,14 +194,45 @@ paths:
         "201":
           description: User registration token
           schema:
-            $ref: '#/definitions/user.TokenResponse'
+            $ref: '#/definitions/user.RegisterUserResponse'
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
       summary: Registers a user
+      tags:
+      - authentication
+  /authentication/resendOTP:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Resend OTP
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/user.ResendOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent
+          schema:
+            $ref: '#/definitions/user.ResendOTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Resend OTP
       tags:
       - authentication
   /authentication/verify:
@@ -174,10 +253,12 @@ paths:
           description: No Content
         "400":
           description: Bad Request
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal Server Error
-          schema: {}
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
       summary: User verification
       tags:
       - authentication
