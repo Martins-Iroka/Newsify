@@ -47,7 +47,19 @@ const docTemplate = `{
                     "200": {
                         "description": "User token",
                         "schema": {
-                            "type": "string"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.DataResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.LoginUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -92,7 +104,19 @@ const docTemplate = `{
                     "200": {
                         "description": "New access token",
                         "schema": {
-                            "$ref": "#/definitions/user.RefreshTokenResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.DataResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.RefreshTokenResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -143,7 +167,19 @@ const docTemplate = `{
                     "201": {
                         "description": "User registration token",
                         "schema": {
-                            "$ref": "#/definitions/user.RegisterUserResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.DataResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.RegisterUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -188,7 +224,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OTP sent",
                         "schema": {
-                            "$ref": "#/definitions/user.ResendOTPResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.DataResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.ResendOTPResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -324,6 +372,20 @@ const docTemplate = `{
                 }
             }
         },
+        "user.LoginUserResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "user.RefreshTokenRequest": {
             "type": "object",
             "required": [
@@ -415,6 +477,12 @@ const docTemplate = `{
                 "token": {
                     "type": "string"
                 }
+            }
+        },
+        "util.DataResponse": {
+            "type": "object",
+            "properties": {
+                "data": {}
             }
         },
         "util.ErrorResponse": {

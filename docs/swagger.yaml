@@ -13,6 +13,15 @@ definitions:
     - email
     - password
     type: object
+  user.LoginUserResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user_id:
+        type: integer
+    type: object
   user.RefreshTokenRequest:
     properties:
       refresh_token:
@@ -76,6 +85,10 @@ definitions:
     - email
     - token
     type: object
+  util.DataResponse:
+    properties:
+      data: {}
+    type: object
   util.ErrorResponse:
     properties:
       error:
@@ -132,7 +145,12 @@ paths:
         "200":
           description: User token
           schema:
-            type: string
+            allOf:
+            - $ref: '#/definitions/util.DataResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.LoginUserResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -161,7 +179,12 @@ paths:
         "200":
           description: New access token
           schema:
-            $ref: '#/definitions/user.RefreshTokenResponse'
+            allOf:
+            - $ref: '#/definitions/util.DataResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.RefreshTokenResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -194,7 +217,12 @@ paths:
         "201":
           description: User registration token
           schema:
-            $ref: '#/definitions/user.RegisterUserResponse'
+            allOf:
+            - $ref: '#/definitions/util.DataResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.RegisterUserResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -223,7 +251,12 @@ paths:
         "200":
           description: OTP sent
           schema:
-            $ref: '#/definitions/user.ResendOTPResponse'
+            allOf:
+            - $ref: '#/definitions/util.DataResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.ResendOTPResponse'
+              type: object
         "400":
           description: Bad Request
           schema:

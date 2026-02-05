@@ -13,6 +13,10 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+type DataResponse struct {
+	Data any
+}
+
 func init() {
 	Validate = validator.New(validator.WithRequiredStructEnabled())
 }
@@ -39,9 +43,6 @@ func writeJSONError(w http.ResponseWriter, status int, message string) error {
 }
 
 func JSONResponse(w http.ResponseWriter, status int, data any) error {
-	type envelope struct {
-		Data any `json:"data"`
-	}
 
-	return writeJSON(w, status, &envelope{Data: data})
+	return writeJSON(w, status, &DataResponse{Data: data})
 }

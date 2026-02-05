@@ -27,8 +27,8 @@ func NewHandler(service userservice.UserService, logger *zap.SugaredLogger) *Han
 //	@tags		authentication
 //	@accept		json
 //	@produce	json
-//	@param		payload	body		user.RegisterUserRequest	true	"User credentials"
-//	@success	201		{object}	user.RegisterUserResponse	"User registration token"
+//	@param		payload	body		user.RegisterUserRequest							true	"User credentials"
+//	@success	201		{object}	util.DataResponse{data=user.RegisterUserResponse}	"User registration token"
 //	@failure	400		{object}	util.ErrorResponse
 //	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/register [post]
@@ -108,8 +108,8 @@ func (h *Handler) verifyUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@tags		authentication
 //	@accept		json
 //	@produce	json
-//	@param		payload	body		user.LoginUserRequest	true	"User login credentials"
-//	@success	200		{string}	Token					"User token"
+//	@param		payload	body		user.LoginUserRequest							true	"User login credentials"
+//	@success	200		{object}	util.DataResponse{data=user.LoginUserResponse}	"User token"
 //	@failure	400		{object}	util.ErrorResponse
 //	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/login [post]
@@ -148,8 +148,8 @@ func (h *Handler) loginUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@tags		authentication
 //	@accept		json
 //	@produce	json
-//	@param		payload	body		user.RefreshTokenRequest	true	"Refresh token"
-//	@success	200		{object}	user.RefreshTokenResponse	"New access token"
+//	@param		payload	body		user.RefreshTokenRequest							true	"Refresh token"
+//	@success	200		{object}	util.DataResponse{data=user.RefreshTokenResponse}	"New access token"
 //	@failure	400		{object}	util.ErrorResponse
 //	@failure	401		{object}	util.ErrorResponse
 //	@failure	500		{object}	util.ErrorResponse
@@ -210,8 +210,8 @@ func (h *Handler) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@tags		authentication
 //	@accept		json
 //	@produce	json
-//	@param		payload	body		user.ResendOTPRequest	true	"Resend OTP"
-//	@success	200		{object}	user.ResendOTPResponse	"OTP sent"
+//	@param		payload	body		user.ResendOTPRequest							true	"Resend OTP"
+//	@success	200		{object}	util.DataResponse{data=user.ResendOTPResponse}	"OTP sent"
 //	@failure	400		{object}	util.ErrorResponse
 //	@failure	500		{object}	util.ErrorResponse
 //	@router		/authentication/resendOTP [post]
