@@ -47,6 +47,7 @@ type RegisterUserRequest struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,min=5,max=72"`
 	Username string `json:"username" validate:"required,max=100"`
+	Role     string `json:"role" validate:"required,oneof=reader creator"`
 }
 
 type RegisterUserResponse struct {
@@ -64,6 +65,7 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, ver
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashedPassword,
+		Role:     req.Role,
 	}
 
 	if err := s.store.CreateUserAndVerificationToken(ctx, user, verificationToken); err != nil {

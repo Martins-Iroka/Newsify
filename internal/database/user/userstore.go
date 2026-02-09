@@ -185,7 +185,7 @@ func (u *UserStore) RevokeRefreshToken(ctx context.Context, tokenHash string) er
 
 func (u *UserStore) createUser(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-		INSERT INTO users (email, username, password, role) VALUES ($1, $2, $3) RETURNING id
+		INSERT INTO users (email, username, password, role) VALUES ($1, $2, $3, $4) RETURNING id
 	`
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()

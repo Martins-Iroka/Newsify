@@ -43,12 +43,18 @@ definitions:
         maxLength: 72
         minLength: 5
         type: string
+      role:
+        enum:
+        - reader
+        - creator
+        type: string
       username:
         maxLength: 100
         type: string
     required:
     - email
     - password
+    - role
     - username
     type: object
   user.RegisterUserResponse:

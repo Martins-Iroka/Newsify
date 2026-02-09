@@ -118,9 +118,11 @@ func TestServiceRegisterUser(t *testing.T) {
 		Email:    "test3@example.com",
 		Username: "username",
 		Password: "12345",
+		Role:     "reader",
 	}
 	createUserAndVerificationToken := "CreateUserAndVerificationToken"
 	sendVerificationCode := "SendVerificationCode"
+	emailID := "emailID"
 	t.Run("register user successfully", func(t *testing.T) {
 		mockStore := new(MockUserStorer)
 		mockAuthenticator := new(MockAuthenticator)
@@ -139,13 +141,14 @@ func TestServiceRegisterUser(t *testing.T) {
 			}), verificationToken,
 		).Return(nil)
 
-		mockOTP.On(sendVerificationCode, req.Email).Return(nil)
+		mockOTP.On(sendVerificationCode, req.Email).Return(emailID, nil)
 
 		tokenResponse, err := service.RegisterUser(t.Context(), req, verificationToken)
 
 		require.NoError(t, err)
 		require.NotNil(t, tokenResponse)
 		assert.Equal(t, verificationToken, tokenResponse.Token)
+		assert.Equal(t, emailID, tokenResponse.EmailID)
 
 		mockStore.AssertExpectations(t)
 		mockOTP.AssertExpectations(t)
@@ -180,7 +183,7 @@ func TestServiceRegisterUser(t *testing.T) {
 		mockStore.On(createUserAndVerificationToken, mock.Anything, mock.Anything, "token").Return(nil)
 
 		otpError := errors.New("failed to send verification code")
-		mockOTP.On(sendVerificationCode, req.Email).Return(otpError)
+		mockOTP.On(sendVerificationCode, req.Email).Return("", otpError)
 
 		mockStore.On("DeleteUser", t.Context(), mock.Anything).Return(nil)
 
@@ -204,7 +207,7 @@ func TestServiceRegisterUser(t *testing.T) {
 		mockStore.On(createUserAndVerificationToken, mock.Anything, mock.Anything, "token").Return(nil)
 
 		otpError := errors.New("failed to send verification code")
-		mockOTP.On(sendVerificationCode, req.Email).Return(otpError)
+		mockOTP.On(sendVerificationCode, req.Email).Return("", otpError)
 
 		deleteError := errors.New("database error")
 		mockStore.On("DeleteUser", t.Context(), mock.Anything).Return(deleteError)

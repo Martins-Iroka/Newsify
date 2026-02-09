@@ -410,6 +410,7 @@ const docTemplate = `{
             "required": [
                 "email",
                 "password",
+                "role",
                 "username"
             ],
             "properties": {
@@ -421,6 +422,13 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 72,
                     "minLength": 5
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "reader",
+                        "creator"
+                    ]
                 },
                 "username": {
                     "type": "string",

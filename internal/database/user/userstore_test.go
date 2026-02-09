@@ -14,6 +14,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -95,13 +96,14 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			Username: "testuser_container",
 			Email:    "container2@example.com",
 			Password: "hashedpassword123",
+			Role:     "reader",
 		}
 		token := "verification-token-container"
 
 		err := store.CreateUserAndVerificationToken(ctx, user, token)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.NotEqual(t, 0, user.ID)
+		require.NotEqual(t, 0, user.ID)
 
 		savedUser, err := store.GetUserByID(ctx, user.ID)
 		assert.Nil(t, err)
@@ -114,6 +116,7 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			Username: "user1",
 			Email:    "duplicate@example.com",
 			Password: "pw1",
+			Role:     "reader",
 		}
 		_ = store.CreateUserAndVerificationToken(ctx, user1, "token1")
 
@@ -121,6 +124,7 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			Username: "user2",
 			Email:    "duplicate@example.com",
 			Password: "pw2",
+			Role:     "reader",
 		}
 		err := store.CreateUserAndVerificationToken(ctx, user2, "token2")
 		assert.NotNil(t, err)
@@ -132,6 +136,7 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			Username: "testuser_container2",
 			Email:    "container@example.com",
 			Password: "hashedpassword123",
+			Role:     "reader",
 		}
 		token := "verification-token-test"
 
@@ -159,6 +164,7 @@ func TestUserStoreCreateUserAndVerificationToken(t *testing.T) {
 			Username: "user1",
 			Email:    "user1@test.com",
 			Password: "pass",
+			Role:     "reader",
 		}
 		token := "duplicate-token"
 
@@ -224,6 +230,7 @@ func TestUserStoreCreateRefreshTokenAndGetUserByRefreshToken(t *testing.T) {
 			Username: "username",
 			Email:    "test@t.com",
 			Password: "pass",
+			Role:     "reader",
 		}
 
 		refreshToken := "new-refresh-token"
@@ -263,6 +270,7 @@ func TestUserStoreDeleteExpiredRefreshTokens(t *testing.T) {
 			Username: "username",
 			Email:    "test@t.com",
 			Password: "pass",
+			Role:     "reader",
 		}
 
 		err := store.CreateUserAndVerificationToken(ctx, user, "verification-token")
@@ -298,6 +306,7 @@ func TestUserStoreActivateUserAndGetUserByEmail(t *testing.T) {
 			Username: "username",
 			Email:    "test@test.com",
 			Password: "pass",
+			Role:     "reader",
 		}
 
 		token := "verification-token"

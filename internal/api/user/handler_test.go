@@ -81,6 +81,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "test1@example.com",
 			Username: "martdev",
 			Password: "123456",
+			Role:     "reader",
 		}
 
 		expectResp := &userService.RegisterUserResponse{Token: "verification-token"}
@@ -106,6 +107,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "duplicate@example.com",
 			Username: "user",
 			Password: "password",
+			Role:     "reader",
 		}
 
 		mockService.On(RegisterUser, mock.Anything, reqBody, mock.Anything).
@@ -127,6 +129,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "test@example.com",
 			Username: "duplicateUsername",
 			Password: "password",
+			Role:     "reader",
 		}
 
 		mockService.On(RegisterUser, mock.Anything, reqBody, mock.Anything).
@@ -148,6 +151,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "wrongEmailFormat",
 			Password: "123456",
 			Username: "martdev",
+			Role:     "reader",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -167,6 +171,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "test2@example.com",
 			Password: "12",
 			Username: "martdev",
+			Role:     "reader",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -186,6 +191,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "test3@example.com",
 			Password: strings.Repeat("1", 73),
 			Username: "martdev",
+			Role:     "reader",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -204,6 +210,7 @@ func TestRegisterUserHandler(t *testing.T) {
 		reqBody := userService.RegisterUserRequest{
 			Email:    "e@example.com",
 			Password: "123456",
+			Role:     "reader",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -223,6 +230,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "test6@example.com",
 			Password: "123456",
 			Username: strings.Repeat("m", 101),
+			Role:     "reader",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -267,6 +275,7 @@ func TestRegisterUserHandler(t *testing.T) {
 			Email:    "test@example.com",
 			Username: "user",
 			Password: "password",
+			Role:     "reader",
 		}
 		dbError := errors.New("dbError")
 		mockService.On(RegisterUser, mock.Anything, reqBody, mock.Anything).
@@ -281,6 +290,25 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		mockService.AssertExpectations(t)
+	})
+
+	t.Run("role is neither reader or creator", func(t *testing.T) {
+		reqBody := userService.RegisterUserRequest{
+			Email:    "mart@example.com",
+			Username: "mart",
+			Password: "martpassword",
+			Role:     "unknown",
+		}
+
+		body, err := json.Marshal(reqBody)
+		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPost, registerPath, bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		handler.registerUserHandler(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, RegisterUser)
 	})
 }
 
