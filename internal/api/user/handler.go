@@ -189,9 +189,9 @@ func (h *Handler) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 //	@tags		authentication
 //	@accept		json
 //	@produce	json
-//	@param		payload	body	string	true	"Refresh token to revoke"
-//	@success	204		"No content"
-//	@failure	500		{object}	util.ErrorResponse
+//	@param		refreshToken	path	string	true	"Refresh token to revoke"
+//	@success	204				"No content"
+//	@failure	500				{object}	util.ErrorResponse
 //	@router		/authentication/{refreshToken}/logout [post]
 func (h *Handler) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
 	refreshToken := chi.URLParam(r, "refreshToken")

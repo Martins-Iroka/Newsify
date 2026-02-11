@@ -81,14 +81,13 @@ definitions:
     properties:
       code:
         type: string
-      email:
-        maxLength: 255
+      email_id:
         type: string
       token:
         type: string
     required:
     - code
-    - email
+    - email_id
     - token
     type: object
   util.DataResponse:
@@ -117,11 +116,10 @@ paths:
       - application/json
       parameters:
       - description: Refresh token to revoke
-        in: body
-        name: payload
+        in: path
+        name: refreshToken
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses:

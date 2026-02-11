@@ -14,7 +14,7 @@ type ErrorResponse struct {
 }
 
 type DataResponse struct {
-	Data any
+	Data any `json:"data"`
 }
 
 func init() {

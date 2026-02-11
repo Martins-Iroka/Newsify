@@ -226,9 +226,9 @@ func TestServiceRegisterUser(t *testing.T) {
 func TestVerifyUser(t *testing.T) {
 
 	req := VerifyUserRequest{
-		Code:  "12345",
-		Email: "t@example.com",
-		Token: "token",
+		Code:    "12345",
+		EmailID: "t@example.com",
+		Token:   "token",
 	}
 
 	verifyCode := "VerifyCode"
@@ -242,7 +242,7 @@ func TestVerifyUser(t *testing.T) {
 
 		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
 
-		mockOTP.On(verifyCode, req.Email, req.Code).Return(nil)
+		mockOTP.On(verifyCode, req.EmailID, req.Code).Return(nil)
 
 		mockStore.On(activateUser, t.Context(), req.Token).Return(nil)
 
@@ -265,7 +265,7 @@ func TestVerifyUser(t *testing.T) {
 		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
 
 		otpError := errors.New("failed to verify code")
-		mockOTP.On(verifyCode, req.Email, req.Code).Return(otpError)
+		mockOTP.On(verifyCode, req.EmailID, req.Code).Return(otpError)
 
 		verifyUserResponse, err := service.VerifyUser(t.Context(), req)
 
@@ -285,7 +285,7 @@ func TestVerifyUser(t *testing.T) {
 
 		service := NewService(mockStore, mockAuthenticator, mockOTP, logger.Sugar(), config.Config)
 
-		mockOTP.On(verifyCode, req.Email, req.Code).Return(nil)
+		mockOTP.On(verifyCode, req.EmailID, req.Code).Return(nil)
 
 		activationError := errors.New("user activation error")
 		mockStore.On(activateUser, t.Context(), req.Token).Return(activationError)

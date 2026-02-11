@@ -310,13 +310,11 @@ const docTemplate = `{
                 "summary": "Logout user",
                 "parameters": [
                     {
+                        "type": "string",
                         "description": "Refresh token to revoke",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "name": "refreshToken",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -471,16 +469,15 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "code",
-                "email",
+                "email_id",
                 "token"
             ],
             "properties": {
                 "code": {
                     "type": "string"
                 },
-                "email": {
-                    "type": "string",
-                    "maxLength": 255
+                "email_id": {
+                    "type": "string"
                 },
                 "token": {
                     "type": "string"

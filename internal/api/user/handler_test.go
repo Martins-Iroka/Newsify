@@ -321,9 +321,9 @@ func TestVerifyUser(t *testing.T) {
 
 	t.Run("verification successful", func(t *testing.T) {
 		reqBody := userService.VerifyUserRequest{
-			Code:  "123456",
-			Email: "testEmail@example.com",
-			Token: "verification_token",
+			Code:    "123456",
+			EmailID: "testEmail@example.com",
+			Token:   "verification_token",
 		}
 
 		response := &userService.VerifyUserResponse{
@@ -370,9 +370,9 @@ func TestVerifyUser(t *testing.T) {
 
 	t.Run("wrong email format", func(t *testing.T) {
 		reqBody := userService.VerifyUserRequest{
-			Code:  "123456",
-			Email: "wrong email format",
-			Token: "verification_token",
+			Code:    "123456",
+			EmailID: "wrong email format",
+			Token:   "verification_token",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -389,9 +389,9 @@ func TestVerifyUser(t *testing.T) {
 
 	t.Run("code exceeds 6", func(t *testing.T) {
 		reqBody := userService.VerifyUserRequest{
-			Code:  "1234567",
-			Email: "mart@email.com",
-			Token: "verification_token",
+			Code:    "1234567",
+			EmailID: "mart@email.com",
+			Token:   "verification_token",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -408,9 +408,9 @@ func TestVerifyUser(t *testing.T) {
 
 	t.Run("no token sent", func(t *testing.T) {
 		reqBody := userService.VerifyUserRequest{
-			Code:  "123456",
-			Email: "mart@email.com",
-			Token: "",
+			Code:    "123456",
+			EmailID: "mart@email.com",
+			Token:   "",
 		}
 
 		body, err := json.Marshal(reqBody)
@@ -427,9 +427,9 @@ func TestVerifyUser(t *testing.T) {
 
 	t.Run("not found error returned", func(t *testing.T) {
 		reqBody := userService.VerifyUserRequest{
-			Code:  "123456",
-			Email: "unknownEmail@test.com",
-			Token: "verification_token",
+			Code:    "123456",
+			EmailID: "unknownEmail@test.com",
+			Token:   "verification_token",
 		}
 
 		mockService.On(VerifyUser, mock.Anything, reqBody).Return(nil, util.ErrorNotFound)
@@ -447,9 +447,9 @@ func TestVerifyUser(t *testing.T) {
 
 	t.Run("db error returns internal server error", func(t *testing.T) {
 		reqBody := userService.VerifyUserRequest{
-			Code:  "654321",
-			Email: "test1@email.com",
-			Token: "token",
+			Code:    "654321",
+			EmailID: "test1@email.com",
+			Token:   "token",
 		}
 
 		dbError := errors.New("db error")

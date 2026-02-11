@@ -90,9 +90,9 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterUserRequest, ver
 }
 
 type VerifyUserRequest struct {
-	Code  string `json:"code" validate:"required,len=6"`
-	Email string `json:"email" validate:"required,email,max=255"`
-	Token string `json:"token" validate:"required"`
+	Code    string `json:"code" validate:"required,len=6"`
+	EmailID string `json:"email_id" validate:"required"`
+	Token   string `json:"token" validate:"required"`
 }
 
 type VerifyUserResponse struct {
@@ -101,13 +101,13 @@ type VerifyUserResponse struct {
 
 func (s *Service) VerifyUser(ctx context.Context, req VerifyUserRequest) (*VerifyUserResponse, error) {
 
-	if err := s.otp.VerifyCode(req.Email, req.Code); err != nil {
-		s.logger.Errorw("failed to verify code", "email", req.Email, "error", err.Error())
+	if err := s.otp.VerifyCode(req.EmailID, req.Code); err != nil {
+		s.logger.Errorw("failed to verify code", "email", req.EmailID, "error", err.Error())
 		return nil, err
 	}
 
 	if err := s.store.ActivateUser(ctx, req.Token); err != nil {
-		s.logger.Errorw("failed to activate user", "email", req.Email, "error", err.Error())
+		s.logger.Errorw("failed to activate user", "email", req.EmailID, "error", err.Error())
 		return nil, err
 	}
 
