@@ -11,6 +11,8 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -66,4 +68,61 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(code)
+}
+
+func setupTest(t *testing.T) {
+	_, err := testDB.Exec("TRUNCATE TABLE news_article CASCADE")
+	require.NoError(t, err)
+}
+
+func TestCreateNewsArticle(t *testing.T) {
+	store := NewsArticleStore{DB: testDB}
+
+	t.Run("should create news article successfully", func(t *testing.T) {
+		setupTest(t)
+		newsArticle := &NewsArticle{
+			Title:     "title1",
+			Content:   "content1",
+			CreatorID: 1,
+		}
+
+		err := store.CreateNewsArticle(t.Context(), newsArticle)
+		require.NoError(t, err)
+		require.NotEqual(t, 0, newsArticle.ID)
+
+		savedNewsArticle, err := store.GetNewsArticleById(t.Context(), 1, newsArticle.ID)
+		require.NoError(t, err)
+		assert.Equal(t, newsArticle.Title, savedNewsArticle.Title)
+		assert.Equal(t, newsArticle.Content, savedNewsArticle.Content)
+	})
+
+	t.Run("should not allow 2 articles with the same titles to be created", func(t *testing.T) {
+		setupTest(t)
+		newsArticle := &NewsArticle{
+			Title:     "title1",
+			Content:   "content1",
+			CreatorID: 1,
+		}
+
+		newsArticle2 := &NewsArticle{
+			Title:     "title1",
+			Content:   "content1",
+			CreatorID: 1,
+		}
+
+		err := store.CreateNewsArticle(t.Context(), newsArticle)
+		require.NoError(t, err)
+		require.NotEqual(t, 0, newsArticle.ID)
+
+		err = store.CreateNewsArticle(t.Context(), newsArticle2)
+		require.Error(t, err)
+
+		savedNewsArticle, err := store.GetNewsArticleById(t.Context(), 1, newsArticle.ID)
+		require.NoError(t, err)
+		assert.Equal(t, newsArticle.Title, savedNewsArticle.Title)
+		assert.Equal(t, newsArticle.Content, savedNewsArticle.Content)
+
+		_, err = store.GetNewsArticleById(t.Context(), 1, newsArticle2.ID)
+		assert.Error(t, err)
+	})
 }

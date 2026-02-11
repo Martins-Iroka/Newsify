@@ -13,6 +13,7 @@ type NewsArticle struct {
 	Title     string
 	Content   string
 	CreatorID int64
+	CreatedAt string
 }
 
 type NewsArticleStorer interface {
@@ -45,17 +46,17 @@ func (na *NewsArticleStore) CreateNewsArticle(ctx context.Context, newsArticle *
 
 func (na *NewsArticleStore) GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*NewsArticle, error) {
 	query := `
-		SELECT na.title, na.content, na.created_at FROM news_article na WHERE na.id = $1 AND na.creator_id = $2 ORDER BY na.created_at DESC
+		SELECT na.title, na.content, na.created_at FROM news_article na WHERE na.creator_id = $1 AND na.id = $2 ORDER BY na.created_at DESC
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
 
 	var news NewsArticle
-	if err := na.DB.QueryRowContext(ctx, query, articleID, creatorID).Scan(
+	if err := na.DB.QueryRowContext(ctx, query, creatorID, articleID).Scan(
 		&news.Title,
 		&news.Content,
-		&news.CreatorID,
+		&news.CreatedAt,
 	); err != nil {
 		return nil, err
 	}
