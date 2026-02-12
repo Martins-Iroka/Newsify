@@ -64,7 +64,7 @@ func (na *NewsArticleStore) GetNewsArticleById(ctx context.Context, creatorID in
 }
 
 func (na *NewsArticleStore) GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]NewsArticle, error) {
-	query := "SELECT * FROM news_article na WHERE na.creator_id = $1 ORDER BY na.created_at LIMIT $2 OFFSET $3"
+	query := "SELECT id, title FROM news_article na WHERE na.creator_id = $1 ORDER BY na.created_at LIMIT $2 OFFSET $3"
 
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
@@ -107,14 +107,14 @@ func (na *NewsArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int
 
 func (na *NewsArticleStore) UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) error {
 	query := `
-		UPDATE news_article na SET na.title = $1 AND na.content = $2 WHERE creator_id = $1 RETURNING na.id
+		UPDATE news_article SET title = $1, content = $2 WHERE id = $3 RETURNING id
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
 
 	if err := na.DB.QueryRowContext(
-		ctx, query, newsArticle.Title, newsArticle.Content,
+		ctx, query, newsArticle.Title, newsArticle.Content, newsArticle.ID,
 	).Scan(&newsArticle.ID); err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
