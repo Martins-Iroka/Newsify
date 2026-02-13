@@ -7,7 +7,7 @@ on:
         branches: [main]
 
 jobs:
-   mygallery-build:
+   newsify-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4 
@@ -32,6 +32,6 @@ jobs:
       - name: Run staticcheck
         run: staticcheck ./...
 
-      # - name: Run Tests
-      #   run: go test -race ./...
+    #   - name: Run Tests
+    #     run: go test -race ./...
             
