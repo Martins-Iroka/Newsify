@@ -215,7 +215,7 @@ func TestNewsArticleStore(t *testing.T) {
 			Content: "title13",
 		}
 
-		err = store.UpdateNewsArticle(t.Context(), 12, modifiedNewsArticle)
+		err = store.UpdateNewsArticle(t.Context(), modifiedNewsArticle)
 		require.NoError(t, err)
 
 		modifiedNA, err := store.GetNewsArticleById(t.Context(), 12, modifiedNewsArticle.ID)

@@ -21,7 +21,7 @@ type NewsArticleStorer interface {
 	GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*NewsArticle, error)
 	GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]NewsArticle, error)
 	DeleteNewsArticle(ctx context.Context, creatorID int64, articleID int64) error
-	UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) error
+	UpdateNewsArticle(ctx context.Context, newsArticle *NewsArticle) error
 }
 
 type NewsArticleStore struct {
@@ -105,7 +105,7 @@ func (na *NewsArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int
 	return nil
 }
 
-func (na *NewsArticleStore) UpdateNewsArticle(ctx context.Context, creatorID int64, newsArticle *NewsArticle) error {
+func (na *NewsArticleStore) UpdateNewsArticle(ctx context.Context, newsArticle *NewsArticle) error {
 	query := `
 		UPDATE news_article SET title = $1, content = $2 WHERE id = $3 RETURNING id
 	`
