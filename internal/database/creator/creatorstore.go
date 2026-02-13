@@ -8,7 +8,7 @@ import (
 	"com.martdev.newsify/internal/util"
 )
 
-type NewsArticle struct {
+type CreatorArticle struct {
 	ID        int64
 	Title     string
 	Content   string
@@ -16,19 +16,19 @@ type NewsArticle struct {
 	CreatedAt string
 }
 
-type NewsArticleStorer interface {
-	CreateNewsArticle(context.Context, *NewsArticle) error
-	GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*NewsArticle, error)
-	GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]NewsArticle, error)
+type CreatorStore interface {
+	CreateNewsArticle(context.Context, *CreatorArticle) error
+	GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*CreatorArticle, error)
+	GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]CreatorArticle, error)
 	DeleteNewsArticle(ctx context.Context, creatorID int64, articleID int64) error
-	UpdateNewsArticle(ctx context.Context, newsArticle *NewsArticle) error
+	UpdateNewsArticle(ctx context.Context, newsArticle *CreatorArticle) error
 }
 
-type NewsArticleStore struct {
+type CreatorArticleStore struct {
 	DB *sql.DB
 }
 
-func (na *NewsArticleStore) CreateNewsArticle(ctx context.Context, newsArticle *NewsArticle) error {
+func (na *CreatorArticleStore) CreateNewsArticle(ctx context.Context, newsArticle *CreatorArticle) error {
 	query := `
 		INSERT INTO news_article (title, content, creator_id) VALUES ($1, $2, $3) RETURNING id
 	`
@@ -44,7 +44,7 @@ func (na *NewsArticleStore) CreateNewsArticle(ctx context.Context, newsArticle *
 	return nil
 }
 
-func (na *NewsArticleStore) GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*NewsArticle, error) {
+func (na *CreatorArticleStore) GetNewsArticleById(ctx context.Context, creatorID int64, articleID int64) (*CreatorArticle, error) {
 	query := `
 		SELECT na.title, na.content, na.created_at FROM news_article na WHERE na.creator_id = $1 AND na.id = $2 ORDER BY na.created_at DESC
 	`
@@ -52,7 +52,7 @@ func (na *NewsArticleStore) GetNewsArticleById(ctx context.Context, creatorID in
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
 	defer cancel()
 
-	var news NewsArticle
+	var news CreatorArticle
 	if err := na.DB.QueryRowContext(ctx, query, creatorID, articleID).Scan(
 		&news.Title,
 		&news.Content,
@@ -63,7 +63,7 @@ func (na *NewsArticleStore) GetNewsArticleById(ctx context.Context, creatorID in
 	return &news, nil
 }
 
-func (na *NewsArticleStore) GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]NewsArticle, error) {
+func (na *CreatorArticleStore) GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]CreatorArticle, error) {
 	query := "SELECT id, title FROM news_article na WHERE na.creator_id = $1 ORDER BY na.created_at LIMIT $2 OFFSET $3"
 
 	ctx, cancel := context.WithTimeout(ctx, util.QueryTimeoutDuration)
@@ -74,10 +74,10 @@ func (na *NewsArticleStore) GetAllNewsArticleByCreator(ctx context.Context, crea
 		return nil, err
 	}
 
-	var newsArticles []NewsArticle
+	var newsArticles []CreatorArticle
 
 	for rows.Next() {
-		var newsArticle NewsArticle
+		var newsArticle CreatorArticle
 		if err := rows.Scan(
 			&newsArticle.ID,
 			&newsArticle.Title,
@@ -90,7 +90,7 @@ func (na *NewsArticleStore) GetAllNewsArticleByCreator(ctx context.Context, crea
 	return newsArticles, nil
 }
 
-func (na *NewsArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int64, articleID int64) error {
+func (na *CreatorArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int64, articleID int64) error {
 	query := `
 		DELETE FROM news_article na WHERE na.id = $1 AND na.creator_id = $2
 	`
@@ -105,7 +105,7 @@ func (na *NewsArticleStore) DeleteNewsArticle(ctx context.Context, creatorID int
 	return nil
 }
 
-func (na *NewsArticleStore) UpdateNewsArticle(ctx context.Context, newsArticle *NewsArticle) error {
+func (na *CreatorArticleStore) UpdateNewsArticle(ctx context.Context, newsArticle *CreatorArticle) error {
 	query := `
 		UPDATE news_article SET title = $1, content = $2 WHERE id = $3 RETURNING id
 	`

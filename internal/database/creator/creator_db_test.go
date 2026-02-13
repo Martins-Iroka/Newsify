@@ -78,11 +78,11 @@ func setupTest(t *testing.T) {
 
 // write test for other functions
 func TestNewsArticleStore(t *testing.T) {
-	store := NewsArticleStore{DB: testDB}
+	store := CreatorArticleStore{DB: testDB}
 
 	t.Run("should create news article successfully", func(t *testing.T) {
 		setupTest(t)
-		newsArticle := &NewsArticle{
+		newsArticle := &CreatorArticle{
 			Title:     "title1",
 			Content:   "content1",
 			CreatorID: 1,
@@ -100,13 +100,13 @@ func TestNewsArticleStore(t *testing.T) {
 
 	t.Run("should not allow 2 articles with the same titles to be created", func(t *testing.T) {
 		setupTest(t)
-		newsArticle := &NewsArticle{
+		newsArticle := &CreatorArticle{
 			Title:     "title1",
 			Content:   "content1",
 			CreatorID: 1,
 		}
 
-		newsArticle2 := &NewsArticle{
+		newsArticle2 := &CreatorArticle{
 			Title:     "title1",
 			Content:   "content1",
 			CreatorID: 1,
@@ -135,25 +135,25 @@ func TestNewsArticleStore(t *testing.T) {
 			Limit:  3,
 			Offset: 0,
 		}
-		newsArticle := &NewsArticle{
+		newsArticle := &CreatorArticle{
 			Title:     "title1",
 			Content:   "content1",
 			CreatorID: 1,
 		}
 
-		newsArticle2 := &NewsArticle{
+		newsArticle2 := &CreatorArticle{
 			Title:     "title2",
 			Content:   "content2",
 			CreatorID: 1,
 		}
 
-		newsArticle3 := &NewsArticle{
+		newsArticle3 := &CreatorArticle{
 			Title:     "title3",
 			Content:   "content3",
 			CreatorID: 2,
 		}
 
-		newsArticles := append([]NewsArticle{}, *newsArticle, *newsArticle2, *newsArticle3)
+		newsArticles := append([]CreatorArticle{}, *newsArticle, *newsArticle2, *newsArticle3)
 
 		for _, na := range newsArticles {
 			err := store.CreateNewsArticle(t.Context(), &na)
@@ -176,7 +176,7 @@ func TestNewsArticleStore(t *testing.T) {
 	t.Run("delete news article created", func(t *testing.T) {
 		setupTest(t)
 
-		newsArticle := &NewsArticle{
+		newsArticle := &CreatorArticle{
 			Title:     "title11",
 			Content:   "content11",
 			CreatorID: 11,
@@ -196,7 +196,7 @@ func TestNewsArticleStore(t *testing.T) {
 	t.Run("update news article", func(t *testing.T) {
 		setupTest(t)
 
-		newsArticle := &NewsArticle{
+		newsArticle := &CreatorArticle{
 			Title:     "title12",
 			Content:   "content12",
 			CreatorID: 12,
@@ -209,7 +209,7 @@ func TestNewsArticleStore(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, newsArticle.Title, na.Title)
 
-		modifiedNewsArticle := &NewsArticle{
+		modifiedNewsArticle := &CreatorArticle{
 			ID:      newsArticle.ID,
 			Title:   "title13",
 			Content: "title13",

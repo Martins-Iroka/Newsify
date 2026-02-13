@@ -1,0 +1,37 @@
+name: Newsify
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+   mygallery-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 
+
+      - name: Set up Go
+        uses: actions/setup-go@v5 
+        with:
+          go-version: '1.25.3'
+    
+      - name: Verify Depencies
+        run: go mod verify
+        
+      - name: Build
+        run: go build -v ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+
+      # - name: Run Tests
+      #   run: go test -race ./...
+            
