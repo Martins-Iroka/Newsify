@@ -9,7 +9,7 @@ import (
 )
 
 type CreatorArticleRequestPayload struct {
-	Title     string `json:"title" validate:"required"`
+	Title     string `json:"title" validate:"required,max=150"`
 	Content   string `json:"content" validate:"required"`
 	CreatorID int64  `json:"creator_id" validate:"required"`
 }
