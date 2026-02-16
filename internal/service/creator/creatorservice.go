@@ -48,21 +48,65 @@ func NewCreatorService(store creator.CreatorStore, logger *zap.SugaredLogger) *C
 }
 
 func (c *CreatorArticleService) CreateNewsArticle(ctx context.Context, creatorArticle *CreatorArticleRequestPayload) error {
+	ca := &creator.CreatorArticle{
+		Title:     creatorArticle.Title,
+		Content:   creatorArticle.Content,
+		CreatorID: creatorArticle.CreatorID,
+	}
+
+	if err := c.store.CreateNewsArticle(ctx, ca); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (c *CreatorArticleService) GetNewsArticleById(ctx context.Context, articleID int64, creatorID int64) (*CreatorArticleResponsePayload, error) {
-	return nil, nil
+
+	ca, err := c.store.GetNewsArticleById(ctx, creatorID, articleID)
+	if err != nil {
+		return nil, err
+	}
+	response := &CreatorArticleResponsePayload{
+		Title:     ca.Title,
+		Content:   ca.Content,
+		CreatedAt: ca.CreatedAt,
+	}
+	return response, nil
 }
 
 func (c *CreatorArticleService) GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]CreatorArticleResponsePayload, error) {
-	return make([]CreatorArticleResponsePayload, 0), nil
+	cas, err := c.store.GetAllNewsArticleByCreator(ctx, creatorID, pagination)
+	if err != nil {
+		return make([]CreatorArticleResponsePayload, 0), nil
+	}
+	response := []CreatorArticleResponsePayload{}
+
+	for _, ca := range cas {
+		creatorArticle := CreatorArticleResponsePayload{
+			ID:    ca.ID,
+			Title: ca.Title,
+		}
+		response = append(response, creatorArticle)
+	}
+	return response, nil
 }
 
 func (c *CreatorArticleService) DeleteNewsArticle(ctx context.Context, articleID int64, creatorID int64) error {
+	if err := c.store.DeleteNewsArticle(ctx, creatorID, articleID); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (c *CreatorArticleService) UpdateNewsArticle(ctx context.Context, articleID int64, newsArticle *CreatorArticleRequestPayload) error {
+	ca := &creator.CreatorArticle{
+		ID:      articleID,
+		Title:   newsArticle.Title,
+		Content: newsArticle.Content,
+	}
+	if err := c.store.UpdateNewsArticle(ctx, ca); err != nil {
+		return err
+	}
 	return nil
 }
