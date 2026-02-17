@@ -5,7 +5,6 @@ import (
 
 	"com.martdev.newsify/internal/database/creator"
 	"com.martdev.newsify/internal/util"
-	"go.uber.org/zap"
 )
 
 type CreatorArticleRequestPayload struct {
@@ -36,14 +35,12 @@ type CreatorService interface {
 }
 
 type CreatorArticleService struct {
-	store  creator.CreatorStore
-	logger *zap.SugaredLogger
+	store creator.CreatorStore
 }
 
-func NewCreatorService(store creator.CreatorStore, logger *zap.SugaredLogger) *CreatorArticleService {
+func NewCreatorService(store creator.CreatorStore) *CreatorArticleService {
 	return &CreatorArticleService{
-		store:  store,
-		logger: logger,
+		store: store,
 	}
 }
 
@@ -78,7 +75,7 @@ func (c *CreatorArticleService) GetNewsArticleById(ctx context.Context, articleI
 func (c *CreatorArticleService) GetAllNewsArticleByCreator(ctx context.Context, creatorID int64, pagination util.PaginatedPostQuery) ([]CreatorArticleResponsePayload, error) {
 	cas, err := c.store.GetAllNewsArticleByCreator(ctx, creatorID, pagination)
 	if err != nil {
-		return make([]CreatorArticleResponsePayload, 0), nil
+		return make([]CreatorArticleResponsePayload, 0), err
 	}
 	response := []CreatorArticleResponsePayload{}
 
