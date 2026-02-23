@@ -231,3 +231,38 @@ func TestDeleteNewsArticle(t *testing.T) {
 		mockStore.AssertExpectations(t)
 	})
 }
+
+func TestUpdateNewsArticle(t *testing.T) {
+	UpdateNewsArticle := "UpdateNewsArticle"
+	caRequest := &CreatorArticleRequestPayload{
+		Title:     "title234",
+		Content:   "content234",
+		CreatorID: 234,
+	}
+
+	t.Run("should update news article successfully", func(t *testing.T) {
+		mockStore := new(MockCreatorStore)
+		service := NewCreatorService(mockStore)
+		articleId := 456
+		mockStore.On(UpdateNewsArticle, mock.Anything, mock.MatchedBy(func(ca *dbCreator.CreatorArticle) bool {
+			return ca.ID == int64(articleId) && ca.Content == caRequest.Content && ca.Title == caRequest.Title
+		})).Return(nil)
+
+		err := service.UpdateNewsArticle(t.Context(), int64(articleId), caRequest)
+		assert.NoError(t, err)
+
+		mockStore.AssertExpectations(t)
+	})
+
+	t.Run("should fail to update news article then return error", func(t *testing.T) {
+		mockStore := new(MockCreatorStore)
+		service := NewCreatorService(mockStore)
+		dbError := errors.New("failed to update news article")
+		mockStore.On(UpdateNewsArticle, mock.Anything, mock.Anything).Return(dbError)
+
+		err := service.UpdateNewsArticle(t.Context(), int64(1234), caRequest)
+		assert.ErrorIs(t, dbError, err)
+
+		mockStore.AssertExpectations(t)
+	})
+}
