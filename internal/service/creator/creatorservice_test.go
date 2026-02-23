@@ -197,3 +197,37 @@ func TestGetAllNewsArticleByCreator(t *testing.T) {
 		mockStore.AssertExpectations(t)
 	})
 }
+
+func TestDeleteNewsArticle(t *testing.T) {
+	DeleteNewsArticle := "DeleteNewsArticle"
+	t.Run("should delete news article successfully", func(t *testing.T) {
+		mockStore := new(MockCreatorStore)
+		service := NewCreatorService(mockStore)
+		articleId := 1
+		creatorId := 11
+		mockStore.On(DeleteNewsArticle, mock.Anything, mock.MatchedBy(func(cid int64) bool {
+			return cid == int64(creatorId)
+		}), mock.MatchedBy(func(aid int64) bool {
+			return aid == int64(articleId)
+		})).
+			Return(nil)
+
+		err := service.DeleteNewsArticle(t.Context(), int64(articleId), int64(creatorId))
+		assert.NoError(t, err)
+
+		mockStore.AssertExpectations(t)
+	})
+
+	t.Run("should fail to delete article then return error", func(t *testing.T) {
+		mockStore := new(MockCreatorStore)
+		service := NewCreatorService(mockStore)
+		dbError := errors.New("failed to delete article")
+
+		mockStore.On(DeleteNewsArticle, mock.Anything, mock.Anything, mock.Anything).Return(dbError)
+
+		err := service.DeleteNewsArticle(t.Context(), 1, 1)
+		assert.ErrorIs(t, dbError, err)
+
+		mockStore.AssertExpectations(t)
+	})
+}
