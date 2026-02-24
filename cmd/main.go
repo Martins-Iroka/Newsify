@@ -8,12 +8,15 @@ import (
 	"com.martdev.newsify/config"
 	"com.martdev.newsify/docs"
 	_ "com.martdev.newsify/docs"
+	creatorhandler "com.martdev.newsify/internal/api/creator"
 	userhandler "com.martdev.newsify/internal/api/user"
 	"com.martdev.newsify/internal/auth/jwt"
 	"com.martdev.newsify/internal/auth/stytch"
 	"com.martdev.newsify/internal/database"
+	creatorstore "com.martdev.newsify/internal/database/creator"
 	userdatabase "com.martdev.newsify/internal/database/user"
 	"com.martdev.newsify/internal/env"
+	creatorservice "com.martdev.newsify/internal/service/creator"
 	userservice "com.martdev.newsify/internal/service/user"
 	"com.martdev.newsify/internal/util"
 	"github.com/go-chi/chi/v5"
@@ -83,11 +86,17 @@ func main() {
 		&userStore, jwtAuthenticator, stytch, logger, config.Config,
 	)
 	userHandler := userhandler.NewHandler(userService, logger)
+
+	creatorStore := creatorstore.CreatorArticleStore{DB: db}
+	creatorService := creatorservice.NewCreatorService(&creatorStore)
+	creatorHandler := creatorhandler.NewCreatorHandler(creatorService, logger)
+
 	mux.Route("/v1", func(r chi.Router) {
 		r.Get("/health", healthCheckHandler)
 		docsURL := "/v1/swagger/doc.json"
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 		userHandler.RegisterRoutes(r)
+		creatorHandler.RegisterCreatorRoutes(r)
 	})
 
 	logger.Fatal(runServer(mux))

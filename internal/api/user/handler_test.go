@@ -97,7 +97,6 @@ func TestRegisterUserHandler(t *testing.T) {
 
 		handler.registerUserHandler(w, req)
 
-		require.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, w.Code)
 		mockService.AssertExpectations(t)
 	})
