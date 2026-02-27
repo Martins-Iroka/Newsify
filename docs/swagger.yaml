@@ -14,6 +14,19 @@ definitions:
     - creator_id
     - title
     type: object
+  creator.CreatorArticleResponsePayload:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      creator_id:
+        type: integer
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
   user.LoginUserRequest:
     properties:
       email:
@@ -313,7 +326,39 @@ paths:
       summary: User verification
       tags:
       - authentication
-  /creator/createnews:
+  /creator/{creatorID}/getNewsArticleById/{articleID}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Creator ID
+        in: path
+        name: creatorID
+        required: true
+        type: integer
+      - description: Article ID
+        in: path
+        name: articleID
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.DataResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/creator.CreatorArticleResponsePayload'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Creator get their news article using their id
+      tags:
+      - creator
+  /creator/createNews:
     post:
       consumes:
       - application/json
@@ -335,7 +380,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ErrorResponse'
-      summary: Create news article by creators
+      summary: Creators publish news article
       tags:
       - creator
   /health:

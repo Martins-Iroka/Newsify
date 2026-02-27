@@ -12,6 +12,7 @@ import (
 
 	creatorservice "com.martdev.newsify/internal/service/creator"
 	"com.martdev.newsify/internal/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -195,6 +196,80 @@ func TestCreateNewsArticle(t *testing.T) {
 		handler.createNewsArticle(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestGetNewsArticleById(t *testing.T) {
+	mockService := new(MockCreatorService)
+	logger := zaptest.NewLogger(t).Sugar()
+	handler := NewCreatorHandler(mockService, logger)
+	GetNewsArticleById := "GetNewsArticleById"
+	const getNewsByIdPath = "/creator/1/getNewsArticleById/11"
+
+	t.Run("should get news by id successfully", func(t *testing.T) {
+		articleId := int64(11)
+		creatorId := int64(1)
+		caResponse := &creatorservice.CreatorArticleResponsePayload{
+			Title:     "title21",
+			Content:   "content21",
+			CreatedAt: "createdAt21",
+		}
+		mockService.On(GetNewsArticleById, mock.Anything, articleId, creatorId).Return(caResponse, nil)
+
+		req := httptest.NewRequest(http.MethodGet, getNewsByIdPath, nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "1")
+		rctx.URLParams.Add("articleID", "11")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getNewsArticleById(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+
+	})
+
+	t.Run("should return bad request for invalid creatorID", func(t *testing.T) {
+
+		req := httptest.NewRequest(http.MethodGet, getNewsByIdPath, nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "a")
+		rctx.URLParams.Add("articleID", "21")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getNewsArticleById(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+		mockService.AssertNotCalled(t, GetNewsArticleById)
+	})
+
+	t.Run("should return not found for invalid params", func(t *testing.T) {
+		dbError := util.ErrorNotFound
+		mockService.On(GetNewsArticleById, mock.Anything, mock.Anything, mock.Anything).Return(nil, dbError)
+
+		req := httptest.NewRequest(http.MethodGet, getNewsByIdPath, nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "2")
+		rctx.URLParams.Add("articleID", "12")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getNewsArticleById(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
 		mockService.AssertExpectations(t)
 	})
 }

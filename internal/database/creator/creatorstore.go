@@ -58,7 +58,12 @@ func (na *CreatorArticleStore) GetNewsArticleById(ctx context.Context, creatorID
 		&news.Content,
 		&news.CreatedAt,
 	); err != nil {
-		return nil, err
+		switch err {
+		case sql.ErrNoRows:
+			return nil, util.ErrorNotFound
+		default:
+			return nil, err
+		}
 	}
 	return &news, nil
 }

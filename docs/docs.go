@@ -330,7 +330,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/creator/createnews": {
+        "/creator/createNews": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -338,7 +338,7 @@ const docTemplate = `{
                 "tags": [
                     "creator"
                 ],
-                "summary": "Create news article by creators",
+                "summary": "Creators publish news article",
                 "parameters": [
                     {
                         "description": "News info",
@@ -358,6 +358,59 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/creator/{creatorID}/getNewsArticleById/{articleID}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "creator"
+                ],
+                "summary": "Creator get their news article using their id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Creator ID",
+                        "name": "creatorID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Article ID",
+                        "name": "articleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.DataResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/creator.CreatorArticleResponsePayload"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -408,6 +461,26 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "maxLength": 150
+                }
+            }
+        },
+        "creator.CreatorArticleResponsePayload": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
