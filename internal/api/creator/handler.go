@@ -1,7 +1,6 @@
 package creator
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -145,13 +144,9 @@ func (h *CreatorHandler) getAllNewsArticlesByCreatorId(w http.ResponseWriter, r 
 		return
 	}
 
-	paginate := util.PaginatedPostQuery{
-		Limit:  p.Limit,
-		Offset: p.Offset,
-	}
+	paginate := util.PaginatedPostQuery(p)
 
 	results, err := h.service.GetAllNewsArticleByCreator(r.Context(), creatorID, paginate)
-	fmt.Printf("error %v", err)
 	if err != nil {
 		util.InternalServerErrorResponse(w, r, err, h.logger)
 		return
