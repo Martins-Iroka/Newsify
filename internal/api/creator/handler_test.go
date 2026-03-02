@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -270,6 +271,120 @@ func TestGetNewsArticleById(t *testing.T) {
 		handler.getNewsArticleById(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestGetAllNewsArticleByCreatorId(t *testing.T) {
+	mockService := new(MockCreatorService)
+	logger := zaptest.NewLogger(t).Sugar()
+	handler := NewCreatorHandler(mockService, logger)
+	GetAllNewsArticleByCreator := "GetAllNewsArticleByCreator"
+	const getAllNewsArticleByCreatorIDPath = "/creator/31/getAllNewsArticlesByCreatorID"
+
+	articles := []creatorservice.CreatorArticleResponsePayload{}
+
+	for v := range 5 {
+		cna := &creatorservice.CreatorArticleResponsePayload{
+			ID:      int64(v),
+			Title:   fmt.Sprintf("title%d", v),
+			Content: fmt.Sprintf("content%d", v),
+		}
+		articles = append(articles, *cna)
+	}
+
+	t.Run("should get all news articles by creator id successfully", func(t *testing.T) {
+
+		creatorId := int64(32)
+
+		mockService.On(GetAllNewsArticleByCreator, mock.Anything, creatorId, mock.Anything).Return(articles, nil)
+
+		req := httptest.NewRequest(http.MethodGet, getAllNewsArticleByCreatorIDPath, nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "32")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getAllNewsArticlesByCreatorId(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("pass query params then get all news articles by creator id successfully", func(t *testing.T) {
+
+		mockService.On(GetAllNewsArticleByCreator, mock.Anything, int64(33), mock.Anything).Return(articles, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/creator/33/getAllNewsArticlesByCreatorID?limit=20&offset=0", nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "33")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getAllNewsArticlesByCreatorId(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("pass invalid creatorID path", func(t *testing.T) {
+
+		req := httptest.NewRequest(http.MethodGet, getAllNewsArticleByCreatorIDPath, nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "a")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getAllNewsArticlesByCreatorId(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("invalid query parameters passed", func(t *testing.T) {
+
+		req := httptest.NewRequest(http.MethodGet, "/creator/34/getAllNewsArticlesByCreatorID?limit=invalid", nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "34")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getAllNewsArticlesByCreatorId(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("get all news article by creator returns internal server error", func(t *testing.T) {
+
+		creatorId := int64(35)
+		internalServerError := errors.New("internal server error")
+		mockService.On(GetAllNewsArticleByCreator, mock.Anything, creatorId, mock.Anything).Return(nil, internalServerError)
+
+		req := httptest.NewRequest(http.MethodGet, getAllNewsArticleByCreatorIDPath, nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "35")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.getAllNewsArticlesByCreatorId(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		mockService.AssertExpectations(t)
 	})
 }

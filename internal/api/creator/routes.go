@@ -7,6 +7,7 @@ func (h *CreatorHandler) RegisterCreatorRoutes(r chi.Router) {
 		r.Post("/createNews", h.createNewsArticle)
 		r.Route("/{creatorId}", func(r chi.Router) {
 			r.Get("/getNewsArticleById/{articleID}", h.getNewsArticleById)
+			r.Get("/getAllNewsArticlesByCreatorID", h.getAllNewsArticlesByCreatorId)
 		})
 	})
 }

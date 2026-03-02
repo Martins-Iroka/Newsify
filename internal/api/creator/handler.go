@@ -59,11 +59,14 @@ func (h *CreatorHandler) createNewsArticle(w http.ResponseWriter, r *http.Reques
 //	@param		creatorID	path		int	true	"Creator ID"
 //	@param		articleID	path		int	true	"Article ID"
 //	@success	200			{object}	util.DataResponse{data=CreatorArticleResponsePayload}
+//
+//	@failure	400			{object}	util.ErrorResponse
+//	@failure	404			{object}	util.ErrorResponse
+//
 //	@failure	500			{object}	util.ErrorResponse
 //	@router		/creator/{creatorID}/getNewsArticleById/{articleID} [get]
 func (h *CreatorHandler) getNewsArticleById(w http.ResponseWriter, r *http.Request) {
 	creatorIDParam := chi.URLParam(r, "creatorID")
-	fmt.Printf("creatorID is %s", creatorIDParam)
 	creatorID, err := strconv.ParseInt(creatorIDParam, 10, 64)
 	if err != nil {
 		util.BadRequestErrorResponse(w, r, err, h.logger)
@@ -89,6 +92,96 @@ func (h *CreatorHandler) getNewsArticleById(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := util.JSONResponse(w, http.StatusOK, newsArticle); err != nil {
+		util.InternalServerErrorResponse(w, r, err, h.logger)
+	}
+}
+
+type ArticleResponse struct {
+	ID        int64  `json:"id"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	CreatorID int64  `json:"creator_id"`
+	CreatedAt string `json:"created_at"`
+}
+
+type CreatorNewsArticlesPayload struct {
+	NewsArticles []ArticleResponse `json:"news_articles"`
+	NextPage     int               `json:"next_page"`
+}
+
+// Get all news articles by creator
+//
+//	@summary	Get all news articles
+//	@tags		creator
+//	@accept		json
+//	@param		creatorID	path		int	true	"Creator ID"
+//	@param		limit		query		int	false	"Limit"
+//	@param		offset		query		int	false	"Offset"
+//	@success	200			{object}	util.DataResponse{data=CreatorNewsArticlesPayload}
+//	@failure	400			{object}	util.ErrorResponse
+//	@failure	500			{object}	util.ErrorResponse
+//	@router		/creator/{creatorID}/getAllNewsArticlesByCreatorID [get]
+func (h *CreatorHandler) getAllNewsArticlesByCreatorId(w http.ResponseWriter, r *http.Request) {
+	creatorIDParam := chi.URLParam(r, "creatorID")
+	creatorID, err := strconv.ParseInt(creatorIDParam, 10, 64)
+	if err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	p := util.PaginatedFeedQueryAPI{
+		Limit:  20,
+		Offset: 0,
+	}
+
+	p, err = p.Parse(r)
+	if err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	if err := util.Validate.Struct(p); err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	paginate := util.PaginatedPostQuery{
+		Limit:  p.Limit,
+		Offset: p.Offset,
+	}
+
+	results, err := h.service.GetAllNewsArticleByCreator(r.Context(), creatorID, paginate)
+	fmt.Printf("error %v", err)
+	if err != nil {
+		util.InternalServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	nextOffset := p.Offset + p.Limit
+	if len(results) < p.Limit {
+		nextOffset = -1
+	}
+
+	creatorNewsArticles := []ArticleResponse{}
+
+	for _, ca := range results {
+		newsArticle := &ArticleResponse{
+			ID:        ca.ID,
+			Title:     ca.Title,
+			Content:   ca.Content,
+			CreatorID: ca.CreatorID,
+			CreatedAt: ca.CreatedAt,
+		}
+
+		creatorNewsArticles = append(creatorNewsArticles, *newsArticle)
+	}
+
+	cna := CreatorNewsArticlesPayload{
+		NewsArticles: creatorNewsArticles,
+		NextPage:     nextOffset,
+	}
+
+	if err := util.JSONResponse(w, http.StatusOK, cna); err != nil {
 		util.InternalServerErrorResponse(w, r, err, h.logger)
 	}
 }

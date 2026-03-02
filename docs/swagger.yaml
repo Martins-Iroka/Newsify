@@ -1,5 +1,27 @@
 basePath: /v1
 definitions:
+  api_creator.CreatorNewsArticlesPayload:
+    properties:
+      news_articles:
+        items:
+          $ref: '#/definitions/creator.ArticleResponse'
+        type: array
+      next_page:
+        type: integer
+    type: object
+  creator.ArticleResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      creator_id:
+        type: integer
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
   creator.CreatorArticleRequestPayload:
     properties:
       content:
@@ -326,6 +348,45 @@ paths:
       summary: User verification
       tags:
       - authentication
+  /creator/{creatorID}/getAllNewsArticlesByCreatorID:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Creator ID
+        in: path
+        name: creatorID
+        required: true
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.DataResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api_creator.CreatorNewsArticlesPayload'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Get all news articles
+      tags:
+      - creator
   /creator/{creatorID}/getNewsArticleById/{articleID}:
     get:
       consumes:
@@ -351,6 +412,14 @@ paths:
                 data:
                   $ref: '#/definitions/creator.CreatorArticleResponsePayload'
               type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
