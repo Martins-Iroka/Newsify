@@ -119,7 +119,7 @@ type CreatorNewsArticlesPayload struct {
 //	@success	200			{object}	util.DataResponse{data=CreatorNewsArticlesPayload}
 //	@failure	400			{object}	util.ErrorResponse
 //	@failure	500			{object}	util.ErrorResponse
-//	@router		/creator/{creatorID}/getAllNewsArticlesByCreatorID [get]
+//	@router		/creator/{creatorID}/getAllNewsArticles [get]
 func (h *CreatorHandler) getAllNewsArticlesByCreatorId(w http.ResponseWriter, r *http.Request) {
 	creatorIDParam := chi.URLParam(r, "creatorID")
 	creatorID, err := strconv.ParseInt(creatorIDParam, 10, 64)
@@ -179,4 +179,39 @@ func (h *CreatorHandler) getAllNewsArticlesByCreatorId(w http.ResponseWriter, r 
 	if err := util.JSONResponse(w, http.StatusOK, cna); err != nil {
 		util.InternalServerErrorResponse(w, r, err, h.logger)
 	}
+}
+
+// Delete news articles by creator
+//
+//	@summary	Creator deletes a new article
+//	@tags		creator
+//	@accept		json
+//	@param		creatorID	path	int	true	"Creator ID"
+//	@param		articleID	path	int	true	"Article ID"
+//	@success	200			"Success"
+//	@failure	400			{object}	util.ErrorResponse
+//	@failure	500			{object}	util.ErrorResponse
+//	@router		/creator/{creatorID}/deleteNewsArticle/{articleID} [delete]
+func (h *CreatorHandler) deleteNewsArticleByCreator(w http.ResponseWriter, r *http.Request) {
+	creatorIDParam := chi.URLParam(r, "creatorID")
+	creatorID, err := strconv.ParseInt(creatorIDParam, 10, 64)
+	if err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	articleIDParam := chi.URLParam(r, "articleID")
+	articleID, err := strconv.ParseInt(articleIDParam, 10, 64)
+	if err != nil {
+		util.BadRequestErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	err = h.service.DeleteNewsArticle(r.Context(), articleID, creatorID)
+	if err != nil {
+		util.InternalServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

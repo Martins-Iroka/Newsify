@@ -388,3 +388,73 @@ func TestGetAllNewsArticleByCreatorId(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 }
+
+func TestDeleteNewsArticleByCreator(t *testing.T) {
+	mockService := new(MockCreatorService)
+	logger := zaptest.NewLogger(t).Sugar()
+	handler := NewCreatorHandler(mockService, logger)
+	DeleteNewsArticle := "DeleteNewsArticle"
+
+	t.Run("delete news article successfully", func(t *testing.T) {
+		articleID := int64(14)
+		creatorID := int64(41)
+
+		mockService.On(DeleteNewsArticle, mock.Anything, articleID, creatorID).Return(nil)
+
+		req := httptest.NewRequest(http.MethodDelete, "/creator/41/deleteNewsArticle/14", nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "41")
+		rctx.URLParams.Add("articleID", "14")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.deleteNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("invalid creatorID returns bad request", func(t *testing.T) {
+
+		req := httptest.NewRequest(http.MethodDelete, "/creator/?/deleteNewsArticle/15", nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "?")
+		rctx.URLParams.Add("articleID", "15")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.deleteNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("delete news article returns db error response is internal server error", func(t *testing.T) {
+		articleID := int64(16)
+		creatorID := int64(61)
+		dbError := errors.New("db error")
+
+		mockService.On(DeleteNewsArticle, mock.Anything, articleID, creatorID).Return(dbError)
+
+		req := httptest.NewRequest(http.MethodGet, "/creator/61/deleteNewsArticle/16", nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("creatorID", "61")
+		rctx.URLParams.Add("articleID", "16")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.deleteNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}

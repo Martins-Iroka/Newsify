@@ -362,7 +362,51 @@
                 }
             }
         },
-        "/creator/{creatorID}/getAllNewsArticlesByCreatorID": {
+        "/creator/{creatorID}/deleteNewsArticle/{articleID}": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "creator"
+                ],
+                "summary": "Creator deletes a new article",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Creator ID",
+                        "name": "creatorID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Article ID",
+                        "name": "articleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/creator/{creatorID}/getAllNewsArticles": {
             "get": {
                 "consumes": [
                     "application/json"

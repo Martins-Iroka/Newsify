@@ -348,7 +348,36 @@ paths:
       summary: User verification
       tags:
       - authentication
-  /creator/{creatorID}/getAllNewsArticlesByCreatorID:
+  /creator/{creatorID}/deleteNewsArticle/{articleID}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Creator ID
+        in: path
+        name: creatorID
+        required: true
+        type: integer
+      - description: Article ID
+        in: path
+        name: articleID
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Success
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Creator deletes a new article
+      tags:
+      - creator
+  /creator/{creatorID}/getAllNewsArticles:
     get:
       consumes:
       - application/json
