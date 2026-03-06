@@ -369,6 +369,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/creator/updateNewsArticle/{articleID}": {
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "Creator updates news article",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Article ID",
+                        "name": "articleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update News Info",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/creator.CreatorArticleRequestPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/creator/{creatorID}/deleteNewsArticle/{articleID}": {
             "delete": {
                 "consumes": [
@@ -377,7 +420,7 @@ const docTemplate = `{
                 "tags": [
                     "creator"
                 ],
-                "summary": "Creator deletes a new article",
+                "summary": "Creator deletes a news article",
                 "parameters": [
                     {
                         "type": "integer",

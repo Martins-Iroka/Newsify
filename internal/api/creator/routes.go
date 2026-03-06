@@ -9,6 +9,7 @@ func (h *CreatorHandler) RegisterCreatorRoutes(r chi.Router) {
 			r.Get("/getNewsArticleById/{articleID}", h.getNewsArticleById)
 			r.Get("/getAllNewsArticlesByCreatorID", h.getAllNewsArticlesByCreatorId)
 			r.Delete("/deleteNewsArticle/{articleID}", h.deleteNewsArticleByCreator)
+			r.Patch("/creator/updateNewsArticle/{articleID}", h.updateNewsArticleByCreator)
 		})
 	})
 }
