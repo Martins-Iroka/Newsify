@@ -458,3 +458,141 @@ func TestDeleteNewsArticleByCreator(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 }
+
+func TestUpdateNewsArticle(t *testing.T) {
+	mockService := new(MockCreatorService)
+	logger := zaptest.NewLogger(t).Sugar()
+	handler := NewCreatorHandler(mockService, logger)
+	UpdateNewsArticle := "UpdateNewsArticle"
+	path := "/creator/updatenewsarticle/"
+
+	t.Run("update news article return nil", func(t *testing.T) {
+		articleID := int64(17)
+		caRequestPayload := &creatorservice.CreatorArticleRequestPayload{
+			Title:     "title17",
+			Content:   "content17",
+			CreatorID: int64(71),
+		}
+
+		mockService.On(UpdateNewsArticle, mock.Anything, articleID, caRequestPayload).Return(nil)
+
+		jsonReq, err := json.Marshal(caRequestPayload)
+		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("%s%d", path, articleID), bytes.NewReader(jsonReq))
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("articleID", "17")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.updateNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("invalid articleID paramter", func(t *testing.T) {
+
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("%s%d", path, 17), nil)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("articleID", "?")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.updateNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("unknown field passed", func(t *testing.T) {
+		caRequest := struct {
+			Title        string `json:"title" validate:"required,max=150"`
+			Content      string `json:"content" validate:"required"`
+			CreatorID    int64  `json:"creator_id" validate:"required"`
+			UnknownField string `json:"unknown_field"`
+		}{
+			Title:        "title19",
+			Content:      "content19",
+			CreatorID:    int64(19),
+			UnknownField: "unknown",
+		}
+
+		jsonReq, err := json.Marshal(caRequest)
+		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("%s%d", path, 19), bytes.NewReader(jsonReq))
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("articleID", "19")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.updateNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+
+	})
+
+	t.Run("invalid json body request", func(t *testing.T) {
+
+		caRequest := &creatorservice.CreatorArticleRequestPayload{
+			Title:   "title18",
+			Content: "content18",
+		}
+
+		jsonReq, err := json.Marshal(caRequest)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("%s%d", path, 18), bytes.NewReader(jsonReq))
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("articleID", "18")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.updateNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("dbError returned", func(t *testing.T) {
+
+		dbError := errors.New("db error")
+
+		mockService.On(UpdateNewsArticle, mock.Anything, mock.Anything, mock.Anything).Return(dbError)
+
+		caRequest := &creatorservice.CreatorArticleRequestPayload{
+			Title:     "title20",
+			Content:   "content20",
+			CreatorID: int64(20),
+		}
+
+		jsonReq, err := json.Marshal(caRequest)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("%s%d", path, 20), bytes.NewReader(jsonReq))
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("articleID", "20")
+
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		handler.updateNewsArticleByCreator(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		mockService.AssertExpectations(t)
+	})
+}

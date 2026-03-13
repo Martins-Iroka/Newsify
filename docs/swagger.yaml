@@ -509,6 +509,8 @@ paths:
           schema:
             $ref: '#/definitions/util.ErrorResponse'
       summary: Creator updates news article
+      tags:
+      - creator
   /health:
     get:
       description: Healthcheck endpoint

@@ -374,6 +374,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "creator"
+                ],
                 "summary": "Creator updates news article",
                 "parameters": [
                     {

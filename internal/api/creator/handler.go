@@ -219,7 +219,7 @@ func (h *CreatorHandler) deleteNewsArticleByCreator(w http.ResponseWriter, r *ht
 // Update news articles by creator
 //
 //	@summary	Creator updates news article
-//	@tag		creator
+//	@tags		creator
 //	@accept		json
 //	@param		articleID	path	int										true	"Article ID"
 //	@param		payload		body	creator.CreatorArticleRequestPayload	true	"Update News Info"
